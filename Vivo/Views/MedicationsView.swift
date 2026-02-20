@@ -29,32 +29,21 @@ struct MedicationsView: View {
                     GradientAddButton(gradient: [.tealStart, .tealEnd]) { showAdd = true }
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 16)
+                .padding(.top, 56)
                 .padding(.bottom, 20)
 
                 // Content
                 if medications.isEmpty {
                     emptyState
                 } else {
-                    VStack(spacing: 0) {
-                        ForEach(Array(medications.enumerated()), id: \.element.id) { index, med in
+                    VStack(spacing: 12) {
+                        ForEach(medications) { med in
                             Button { selected = med } label: {
                                 MedicationCardRow(medication: med)
                             }
                             .buttonStyle(.plain)
-                            .swipeActions(edge: .trailing) {
-                                Button(role: .destructive) { modelContext.delete(med) } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-                            }
-                            if index < medications.count - 1 {
-                                Divider().padding(.leading, 80)
-                            }
                         }
                     }
-                    .background(Color.cardBg)
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .warmShadow()
                     .padding(.horizontal, 20)
                 }
 
@@ -137,6 +126,10 @@ struct MedicationDetailSheet: View {
                     detailRow(label: "Frequency", value: medication.frequency)
                     Divider().padding(.leading, 16)
                     detailRow(label: "Time", value: medication.scheduledTime.formatted(.dateTime.hour().minute()))
+                    if !medication.notes.isEmpty {
+                        Divider().padding(.leading, 16)
+                        detailRow(label: "Notes", value: medication.notes)
+                    }
                 }
                 .background(Color.bg)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -185,6 +178,7 @@ struct MedicationDetailSheet: View {
             Text(value)
                 .font(.system(size: 14))
                 .foregroundStyle(Color.nearBlack)
+                .multilineTextAlignment(.trailing)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
@@ -201,6 +195,7 @@ struct AddMedicationView: View {
     @State private var dosage = ""
     @State private var frequency = "Once daily"
     @State private var scheduledTime = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
+    @State private var notes = ""
     @State private var colorIndex = 0
 
     private let frequencies = ["Once daily", "Twice daily", "Three times daily", "As needed"]
@@ -227,6 +222,7 @@ struct AddMedicationView: View {
                 Section("Medication Info") {
                     TextField("Name", text: $name)
                     TextField("Dosage (e.g. 10mg)", text: $dosage)
+                    TextField("Notes (optional)", text: $notes)
                 }
 
                 Section("Schedule") {
@@ -273,7 +269,8 @@ struct AddMedicationView: View {
             dosage: dosage.trimmingCharacters(in: .whitespaces),
             frequency: frequency,
             scheduledTime: scheduledTime,
-            colorIndex: colorIndex
+            colorIndex: colorIndex,
+            notes: notes.trimmingCharacters(in: .whitespaces)
         ))
         dismiss()
     }

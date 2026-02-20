@@ -112,7 +112,7 @@ struct GradientAddButton: View {
                 .background(
                     LinearGradient(colors: gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
                 )
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
     }
 }
@@ -122,6 +122,7 @@ struct GradientAddButton: View {
 struct GradientDateBadge: View {
     let date: Date
     var isPast: Bool = false
+    var isToday: Bool = false
 
     var body: some View {
         VStack(spacing: 1) {
@@ -133,16 +134,20 @@ struct GradientDateBadge: View {
                 .foregroundStyle(isPast ? Color.mutedFg : .white)
         }
         .frame(width: 52, height: 52)
-        .background(
-            isPast
-                ? AnyShapeStyle(Color.mutedBg.opacity(0.6))
-                : AnyShapeStyle(LinearGradient(colors: [.tealStart, .cyanStart], startPoint: .topLeading, endPoint: .bottomTrailing))
-        )
+        .background {
+            if isPast {
+                Color.mutedBg.opacity(0.6)
+            } else if isToday {
+                LinearGradient(colors: [Color.amberStart, Color.amberEnd], startPoint: .topLeading, endPoint: .bottomTrailing)
+            } else {
+                LinearGradient(colors: [Color.tealStart, Color.cyanStart], startPoint: .topLeading, endPoint: .bottomTrailing)
+            }
+        }
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
 
-// MARK: - Medication Card Row
+// MARK: - Medication Card Row (self-contained card)
 
 struct MedicationCardRow: View {
     let medication: Medication
@@ -151,12 +156,12 @@ struct MedicationCardRow: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            // Color stripe
+            // Color stripe (6px — matches Figma w-1.5)
             Rectangle()
                 .fill(
                     LinearGradient(colors: [color, color.opacity(0.4)], startPoint: .top, endPoint: .bottom)
                 )
-                .frame(width: 4)
+                .frame(width: 6)
 
             HStack(spacing: 14) {
                 // Pill icon
@@ -169,7 +174,7 @@ struct MedicationCardRow: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(medication.name)
-                        .font(.system(size: 15, weight: .medium))
+                        .font(.system(size: 15))
                         .foregroundStyle(Color.nearBlack)
                         .lineLimit(1)
                     Text("\(medication.dosage) · \(medication.frequency)")
@@ -185,7 +190,7 @@ struct MedicationCardRow: View {
                         .font(.system(size: 10))
                         .foregroundStyle(Color.mutedFg)
                     Text(medication.scheduledTime, format: .dateTime.hour().minute())
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.system(size: 11))
                         .foregroundStyle(Color.mutedFg)
                 }
                 .padding(.horizontal, 10)
@@ -197,10 +202,12 @@ struct MedicationCardRow: View {
             .padding(.vertical, 14)
         }
         .background(Color.cardBg)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .warmShadow()
     }
 }
 
-// MARK: - Doctor Card Row
+// MARK: - Doctor Card Row (self-contained card)
 
 struct DoctorCardRow: View {
     let doctor: Doctor
@@ -222,7 +229,7 @@ struct DoctorCardRow: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(doctor.name)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.system(size: 15))
                     .foregroundStyle(Color.nearBlack)
                     .lineLimit(1)
 
@@ -237,7 +244,7 @@ struct DoctorCardRow: View {
 
             Spacer()
 
-            // Phone button
+            // Phone icon button
             Image(systemName: "phone")
                 .font(.system(size: 14))
                 .foregroundStyle(Color.primaryTeal)
@@ -248,53 +255,76 @@ struct DoctorCardRow: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
         .background(Color.cardBg)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .warmShadow()
     }
 }
 
-// MARK: - Appointment Card Row
+// MARK: - Appointment Card Row (self-contained card)
 
 struct AppointmentCardRow: View {
     let appointment: Appointment
-    var showChevron: Bool = true
+    /// Pass true in the Appointments tab to show amber "Today" badge; false in Home preview
+    var showTodayBadge: Bool = false
 
     var body: some View {
-        let isPast = appointment.date < Date()
+        let isPast = appointment.date < Calendar.current.startOfDay(for: Date())
+        let isToday = Calendar.current.isDateInToday(appointment.date)
+        let showAmber = showTodayBadge && isToday
 
-        HStack(spacing: 14) {
-            GradientDateBadge(date: appointment.date, isPast: isPast)
+        VStack(spacing: 0) {
+            // Amber top stripe for today
+            if showAmber {
+                LinearGradient(colors: [.amberStart, .amberEnd], startPoint: .leading, endPoint: .trailing)
+                    .frame(height: 2)
+            }
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text(appointment.title)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(Color.nearBlack)
-                    .lineLimit(1)
-                Text(appointment.doctorName)
-                    .font(.system(size: 12))
-                    .foregroundStyle(Color.mutedFg)
-                    .lineLimit(1)
-                if !appointment.time.isEmpty {
-                    HStack(spacing: 4) {
-                        Image(systemName: "clock")
-                            .font(.system(size: 10))
-                            .foregroundStyle(Color.mutedFg.opacity(0.6))
-                        Text(appointment.time)
-                            .font(.system(size: 11))
-                            .foregroundStyle(Color.mutedFg.opacity(0.8))
+            HStack(spacing: 14) {
+                GradientDateBadge(date: appointment.date, isPast: isPast, isToday: showAmber)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(appointment.title)
+                        .font(.system(size: 15))
+                        .foregroundStyle(Color.nearBlack)
+                        .lineLimit(1)
+                    Text(appointment.doctorName)
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.mutedFg)
+                        .lineLimit(1)
+                    if !appointment.time.isEmpty {
+                        HStack(spacing: 4) {
+                            Image(systemName: "clock")
+                                .font(.system(size: 10))
+                                .foregroundStyle(Color.mutedFg.opacity(0.6))
+                            Text(appointment.time)
+                                .font(.system(size: 11))
+                                .foregroundStyle(Color.mutedFg.opacity(0.8))
+                        }
                     }
                 }
-            }
 
-            Spacer()
+                Spacer()
 
-            if showChevron {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color.mutedFg.opacity(0.4))
+                if showAmber {
+                    Text("Today")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(Color.amberStart)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.amberStart.opacity(0.1))
+                        .clipShape(Capsule())
+                } else {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Color.mutedFg.opacity(0.3))
+                }
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
         .background(Color.cardBg)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .warmShadow()
         .opacity(isPast ? 0.55 : 1)
     }
 }

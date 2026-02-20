@@ -43,8 +43,8 @@ struct NotesView: View {
                     GradientAddButton(gradient: [.purpleStart, .purpleEnd]) { showAdd = true }
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 16)
-                .padding(.bottom, 16)
+                .padding(.top, 56)
+                .padding(.bottom, 20)
 
                 // Search bar
                 HStack(spacing: 10) {

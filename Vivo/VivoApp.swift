@@ -23,11 +23,18 @@ struct VivoApp: App {
             Appointment.self,
             HealthNote.self,
         ])
+        // CloudKit sync only works on a physical device with the iCloud container
+        // configured in the Apple Developer Portal. Disable it on the simulator
+        // to avoid launch lag, AttributeGraph cycles, and CloudKit export errors.
+        #if targetEnvironment(simulator)
+        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        #else
         let modelConfiguration = ModelConfiguration(
             schema: schema,
             isStoredInMemoryOnly: false,
             cloudKitDatabase: .private("iCloud.com.noahlin.Vivo")
         )
+        #endif
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {

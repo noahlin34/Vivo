@@ -29,32 +29,21 @@ struct DoctorsView: View {
                     GradientAddButton(gradient: [.amberStart, .amberEnd]) { showAdd = true }
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 16)
+                .padding(.top, 56)
                 .padding(.bottom, 20)
 
                 // Content
                 if doctors.isEmpty {
                     emptyState
                 } else {
-                    VStack(spacing: 0) {
-                        ForEach(Array(doctors.enumerated()), id: \.element.id) { index, doc in
+                    VStack(spacing: 12) {
+                        ForEach(doctors) { doc in
                             Button { selected = doc } label: {
                                 DoctorCardRow(doctor: doc)
                             }
                             .buttonStyle(.plain)
-                            .swipeActions(edge: .trailing) {
-                                Button(role: .destructive) { modelContext.delete(doc) } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-                            }
-                            if index < doctors.count - 1 {
-                                Divider().padding(.leading, 80)
-                            }
                         }
                     }
-                    .background(Color.cardBg)
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .warmShadow()
                     .padding(.horizontal, 20)
                 }
 

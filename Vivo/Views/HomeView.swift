@@ -13,10 +13,7 @@ struct HomeView: View {
     @Query private var doctors: [Doctor]
     @Query(sort: \HealthNote.createdAt, order: .reverse) private var notes: [HealthNote]
 
-    private var topSafeArea: CGFloat {
-        (UIApplication.shared.connectedScenes.first as? UIWindowScene)?
-            .windows.first?.safeAreaInsets.top ?? 0
-    }
+    @State private var topSafeArea: CGFloat = 0
 
     private var upcomingAppointments: [Appointment] {
         appointments.filter { $0.date >= Calendar.current.startOfDay(for: Date()) }
@@ -34,6 +31,10 @@ struct HomeView: View {
         }
         .background(Color.bg)
         .ignoresSafeArea(edges: .top)
+        .onAppear {
+            topSafeArea = (UIApplication.shared.connectedScenes.first as? UIWindowScene)?
+                .windows.first?.safeAreaInsets.top ?? 0
+        }
     }
 
     // MARK: - Hero
@@ -215,12 +216,9 @@ struct HomeView: View {
                     .warmShadow()
                     .padding(.horizontal, 20)
             } else {
-                WarmCard {
-                    ForEach(Array(medications.prefix(3).enumerated()), id: \.element.id) { index, med in
+                VStack(spacing: 10) {
+                    ForEach(medications.prefix(3)) { med in
                         MedicationCardRow(medication: med)
-                        if index < min(medications.count, 3) - 1 {
-                            Divider().padding(.leading, 80)
-                        }
                     }
                 }
                 .padding(.horizontal, 20)
@@ -258,12 +256,9 @@ struct HomeView: View {
                     .warmShadow()
                     .padding(.horizontal, 20)
             } else {
-                WarmCard {
-                    ForEach(Array(upcomingAppointments.enumerated()), id: \.element.id) { index, appt in
-                        AppointmentCardRow(appointment: appt)
-                        if index < upcomingAppointments.count - 1 {
-                            Divider().padding(.leading, 82)
-                        }
+                VStack(spacing: 10) {
+                    ForEach(upcomingAppointments) { appt in
+                        AppointmentCardRow(appointment: appt, showTodayBadge: true)
                     }
                 }
                 .padding(.horizontal, 20)

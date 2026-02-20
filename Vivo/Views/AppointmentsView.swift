@@ -36,7 +36,7 @@ struct AppointmentsView: View {
                     GradientAddButton(gradient: [.cyanStart, .cyanEnd]) { showAdd = true }
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 16)
+                .padding(.top, 56)
                 .padding(.bottom, 20)
 
                 if appointments.isEmpty {
@@ -48,32 +48,14 @@ struct AppointmentsView: View {
                                 SectionLabel(title: "Upcoming", dotColor: Color.primaryTeal)
                                     .padding(.horizontal, 20)
 
-                                VStack(spacing: 0) {
-                                    ForEach(Array(upcoming.enumerated()), id: \.element.id) { index, appt in
-                                        let isToday = Calendar.current.isDateInToday(appt.date)
+                                VStack(spacing: 10) {
+                                    ForEach(upcoming) { appt in
                                         Button { selected = appt } label: {
-                                            VStack(spacing: 0) {
-                                                if isToday {
-                                                    LinearGradient(colors: [.amberStart, .amberEnd], startPoint: .leading, endPoint: .trailing)
-                                                        .frame(height: 3)
-                                                }
-                                                AppointmentCardRow(appointment: appt)
-                                            }
+                                            AppointmentCardRow(appointment: appt, showTodayBadge: true)
                                         }
                                         .buttonStyle(.plain)
-                                        .swipeActions(edge: .trailing) {
-                                            Button(role: .destructive) { modelContext.delete(appt) } label: {
-                                                Label("Delete", systemImage: "trash")
-                                            }
-                                        }
-                                        if index < upcoming.count - 1 {
-                                            Divider().padding(.leading, 82)
-                                        }
                                     }
                                 }
-                                .background(Color.cardBg)
-                                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                                .warmShadow()
                                 .padding(.horizontal, 20)
                             }
                         }
@@ -83,25 +65,14 @@ struct AppointmentsView: View {
                                 SectionLabel(title: "Past", dotColor: Color.mutedFg.opacity(0.4))
                                     .padding(.horizontal, 20)
 
-                                VStack(spacing: 0) {
-                                    ForEach(Array(past.enumerated()), id: \.element.id) { index, appt in
+                                VStack(spacing: 10) {
+                                    ForEach(past) { appt in
                                         Button { selected = appt } label: {
                                             AppointmentCardRow(appointment: appt)
                                         }
                                         .buttonStyle(.plain)
-                                        .swipeActions(edge: .trailing) {
-                                            Button(role: .destructive) { modelContext.delete(appt) } label: {
-                                                Label("Delete", systemImage: "trash")
-                                            }
-                                        }
-                                        if index < past.count - 1 {
-                                            Divider().padding(.leading, 82)
-                                        }
                                     }
                                 }
-                                .background(Color.cardBg)
-                                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                                .warmShadow()
                                 .padding(.horizontal, 20)
                             }
                         }
