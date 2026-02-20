@@ -8,12 +8,15 @@ import SwiftData
 import UIKit
 
 struct HomeView: View {
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \Medication.scheduledTime) private var medications: [Medication]
     @Query(sort: \Appointment.date) private var appointments: [Appointment]
     @Query private var doctors: [Doctor]
     @Query(sort: \HealthNote.createdAt, order: .reverse) private var notes: [HealthNote]
 
     @State private var topSafeArea: CGFloat = 0
+    @State private var selectedMed: Medication? = nil
+    @State private var selectedAppt: Appointment? = nil
 
     private var upcomingAppointments: [Appointment] {
         appointments.filter { $0.date >= Calendar.current.startOfDay(for: Date()) }
@@ -31,6 +34,18 @@ struct HomeView: View {
         }
         .background(Color.bg)
         .ignoresSafeArea(edges: .top)
+        .sheet(item: $selectedMed) { med in
+            MedicationDetailSheet(medication: med) {
+                modelContext.delete(med)
+                selectedMed = nil
+            }
+        }
+        .sheet(item: $selectedAppt) { appt in
+            AppointmentDetailSheet(appointment: appt) {
+                modelContext.delete(appt)
+                selectedAppt = nil
+            }
+        }
         .onAppear {
             topSafeArea = (UIApplication.shared.connectedScenes.first as? UIWindowScene)?
                 .windows.first?.safeAreaInsets.top ?? 0
@@ -218,7 +233,10 @@ struct HomeView: View {
             } else {
                 VStack(spacing: 10) {
                     ForEach(medications.prefix(3)) { med in
-                        MedicationCardRow(medication: med)
+                        Button { selectedMed = med } label: {
+                            MedicationCardRow(medication: med)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal, 20)
@@ -258,7 +276,10 @@ struct HomeView: View {
             } else {
                 VStack(spacing: 10) {
                     ForEach(upcomingAppointments) { appt in
-                        AppointmentCardRow(appointment: appt, showTodayBadge: true)
+                        Button { selectedAppt = appt } label: {
+                            AppointmentCardRow(appointment: appt, showTodayBadge: true)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal, 20)
