@@ -1,0 +1,273 @@
+//
+//  DoctorsView.swift
+//  Vivo
+//
+
+import SwiftUI
+import SwiftData
+
+struct DoctorsView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \Doctor.createdAt) private var doctors: [Doctor]
+    @State private var showAdd = false
+    @State private var selected: Doctor? = nil
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                // Header
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Doctors")
+                            .font(.system(size: 28, weight: .regular, design: .serif))
+                            .foregroundStyle(Color.nearBlack)
+                        Text("\(doctors.count) doctor\(doctors.count == 1 ? "" : "s") in your care team")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color.mutedFg)
+                    }
+                    Spacer()
+                    GradientAddButton(gradient: [.amberStart, .amberEnd]) { showAdd = true }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
+                .padding(.bottom, 20)
+
+                // Content
+                if doctors.isEmpty {
+                    emptyState
+                } else {
+                    VStack(spacing: 0) {
+                        ForEach(Array(doctors.enumerated()), id: \.element.id) { index, doc in
+                            Button { selected = doc } label: {
+                                DoctorCardRow(doctor: doc)
+                            }
+                            .buttonStyle(.plain)
+                            .swipeActions(edge: .trailing) {
+                                Button(role: .destructive) { modelContext.delete(doc) } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                            if index < doctors.count - 1 {
+                                Divider().padding(.leading, 80)
+                            }
+                        }
+                    }
+                    .background(Color.cardBg)
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .warmShadow()
+                    .padding(.horizontal, 20)
+                }
+
+                Spacer(minLength: 40)
+            }
+        }
+        .background(Color.bg)
+        .sheet(isPresented: $showAdd) { AddDoctorView() }
+        .sheet(item: $selected) { doc in
+            DoctorDetailSheet(doctor: doc) {
+                modelContext.delete(doc)
+                selected = nil
+            }
+        }
+    }
+
+    var emptyState: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "stethoscope")
+                .font(.system(size: 28))
+                .foregroundStyle(Color.amberStart.opacity(0.4))
+                .frame(width: 64, height: 64)
+                .background(Color.amberStart.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            Text("No doctors added")
+                .font(.system(size: 15))
+                .foregroundStyle(Color.mutedFg)
+            Text("Tap + to add your first doctor")
+                .font(.system(size: 13))
+                .foregroundStyle(Color.mutedFg.opacity(0.6))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 56)
+        .background(Color.cardBg)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .warmShadow()
+        .padding(.horizontal, 20)
+    }
+}
+
+// MARK: - Doctor Detail Sheet
+
+struct DoctorDetailSheet: View {
+    let doctor: Doctor
+    let onDelete: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        let style = SpecialtyStyle.forSpecialty(doctor.specialty)
+        let initial = doctor.name.split(separator: " ").last?.first.map(String.init) ?? "D"
+
+        return NavigationStack {
+            VStack(spacing: 0) {
+                // Header
+                HStack(spacing: 16) {
+                    Text(initial)
+                        .font(.system(size: 24, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 64, height: 64)
+                        .background(
+                            LinearGradient(colors: style.gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(doctor.name)
+                            .font(.system(size: 22, weight: .medium))
+                            .foregroundStyle(Color.nearBlack)
+                        Text(doctor.specialty)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(style.color)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(style.color.opacity(0.1))
+                            .clipShape(Capsule())
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(20)
+
+                // Contact rows
+                VStack(spacing: 10) {
+                    if !doctor.phone.isEmpty {
+                        contactRow(icon: "phone", iconColor: Color.primaryTeal, label: "Phone", value: doctor.phone)
+                    }
+                    if !doctor.email.isEmpty {
+                        contactRow(icon: "envelope", iconColor: Color.cyanStart, label: "Email", value: doctor.email)
+                    }
+                    if !doctor.address.isEmpty {
+                        contactRow(icon: "mappin", iconColor: Color.amberStart, label: "Address", value: doctor.address)
+                    }
+                }
+                .padding(.horizontal, 20)
+
+                Spacer()
+
+                Button {
+                    onDelete()
+                    dismiss()
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "trash")
+                        Text("Remove Doctor")
+                    }
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(Color(hex: "DC2626"))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(Color(hex: "DC2626").opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 24)
+            }
+            .background(Color.cardBg)
+            .navigationTitle("Doctor Details")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium])
+        .presentationCornerRadius(24)
+    }
+
+    func contactRow(icon: String, iconColor: Color, label: String, value: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 15))
+                .foregroundStyle(iconColor)
+                .frame(width: 36, height: 36)
+                .background(iconColor.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color.mutedFg)
+                Text(value)
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color.nearBlack)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(Color.bg)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+}
+
+// MARK: - Add Doctor Sheet
+
+struct AddDoctorView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var name = ""
+    @State private var specialty = ""
+    @State private var phone = ""
+    @State private var email = ""
+    @State private var address = ""
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    HStack(spacing: 8) {
+                        Image(systemName: "sparkles")
+                            .foregroundStyle(.white)
+                            .frame(width: 32, height: 32)
+                            .background(LinearGradient(colors: [.amberStart, .amberEnd], startPoint: .topLeading, endPoint: .bottomTrailing))
+                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        Text("Add Doctor")
+                            .font(.headline)
+                    }
+                }
+
+                Section("Doctor Info") {
+                    TextField("Full Name", text: $name)
+                    TextField("Specialty", text: $specialty)
+                }
+
+                Section("Contact") {
+                    TextField("Phone", text: $phone).keyboardType(.phonePad)
+                    TextField("Email", text: $email).keyboardType(.emailAddress)
+                    TextField("Address", text: $address)
+                }
+            }
+            .navigationTitle("Add Doctor")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") { save() }
+                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+        }
+        .presentationCornerRadius(24)
+    }
+
+    private func save() {
+        modelContext.insert(Doctor(
+            name: name.trimmingCharacters(in: .whitespaces),
+            specialty: specialty.trimmingCharacters(in: .whitespaces),
+            phone: phone.trimmingCharacters(in: .whitespaces),
+            email: email.trimmingCharacters(in: .whitespaces),
+            address: address.trimmingCharacters(in: .whitespaces)
+        ))
+        dismiss()
+    }
+}

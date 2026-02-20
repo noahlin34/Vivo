@@ -6,56 +6,37 @@
 //
 
 import SwiftUI
-import SwiftData
+import UIKit
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    init() {
+        // Tab bar: warm cream background, teal active tint
+        let appearance = UITabBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        // #F6F2EC = rgb(246, 242, 236)
+        appearance.backgroundColor = UIColor(red: 246/255, green: 242/255, blue: 236/255, alpha: 0.97)
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
+    }
 
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
-                }
-                .onDelete(perform: deleteItems)
+        TabView {
+            Tab("Home", systemImage: "house.fill") {
+                HomeView()
             }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
+            Tab("Meds", systemImage: "pill.fill") {
+                MedicationsView()
             }
-        } detail: {
-            Text("Select an item")
-        }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
+            Tab("Doctors", systemImage: "stethoscope") {
+                DoctorsView()
+            }
+            Tab("Appts", systemImage: "calendar") {
+                AppointmentsView()
+            }
+            Tab("Notes", systemImage: "note.text") {
+                NotesView()
             }
         }
+        .tint(Color(hex: "0D7C66"))
     }
-}
-
-#Preview {
-    ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
 }

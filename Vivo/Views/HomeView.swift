@@ -1,0 +1,457 @@
+//
+//  HomeView.swift
+//  Vivo
+//
+
+import SwiftUI
+import SwiftData
+import UIKit
+
+struct HomeView: View {
+    @Query(sort: \Medication.scheduledTime) private var medications: [Medication]
+    @Query(sort: \Appointment.date) private var appointments: [Appointment]
+    @Query private var doctors: [Doctor]
+    @Query(sort: \HealthNote.createdAt, order: .reverse) private var notes: [HealthNote]
+
+    @AppStorage("heartRate") private var heartRate: String = "–"
+    @AppStorage("bloodPressure") private var bloodPressure: String = "–"
+
+    @State private var editingVital: VitalType? = nil
+    @State private var vitalInput: String = ""
+
+    private var topSafeArea: CGFloat {
+        (UIApplication.shared.connectedScenes.first as? UIWindowScene)?
+            .windows.first?.safeAreaInsets.top ?? 0
+    }
+
+    enum VitalType { case heartRate, bloodPressure }
+
+    private var upcomingAppointments: [Appointment] {
+        appointments.filter { $0.date >= Calendar.current.startOfDay(for: Date()) }
+            .prefix(3).map { $0 }
+    }
+
+    private var nextAppointment: Appointment? { upcomingAppointments.first }
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                heroSection
+                mainContent
+            }
+        }
+        .background(Color.bg)
+        .ignoresSafeArea(edges: .top)
+        .alert(editingVital == .heartRate ? "Heart Rate (BPM)" : "Blood Pressure",
+               isPresented: Binding(get: { editingVital != nil }, set: { if !$0 { editingVital = nil } })) {
+            TextField(editingVital == .heartRate ? "e.g. 72" : "e.g. 120/80", text: $vitalInput)
+                .keyboardType(editingVital == .heartRate ? .numberPad : .default)
+            Button("Save") { saveVital() }
+            Button("Cancel", role: .cancel) { editingVital = nil }
+        }
+    }
+
+    // MARK: - Hero
+
+    var heroSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
+                // Date row
+                HStack(spacing: 6) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.white.opacity(0.6))
+                    Text(Date(), format: .dateTime.weekday(.wide).month(.wide).day())
+                        .font(.system(size: 13))
+                        .foregroundStyle(.white.opacity(0.7))
+                }
+                .padding(.top, topSafeArea + 16)
+
+                Text("My Health")
+                    .font(.system(size: 32, weight: .regular, design: .serif))
+                    .foregroundStyle(.white)
+                    .padding(.top, 4)
+
+                Text("Your daily wellness overview")
+                    .font(.system(size: 14))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .padding(.top, 2)
+
+                // Summary chips
+                HStack(spacing: 10) {
+                    heroChip(
+                        icon: "pill.fill",
+                        label: "Today's Meds",
+                        value: "\(medications.count) active"
+                    )
+                    heroChip(
+                        icon: "calendar",
+                        label: "Next Appt",
+                        value: nextAppointment.map { $0.date.formatted(.dateTime.month(.abbreviated).day()) } ?? "None"
+                    )
+                }
+                .padding(.top, 20)
+                .padding(.bottom, 28)
+            }
+            .padding(.horizontal, 20)
+        }
+        .background {
+            LinearGradient(
+                colors: [Color(hex: "0D7C66"), Color(hex: "059669"), Color(hex: "0891B2")],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 24, bottomTrailingRadius: 24))
+            .ignoresSafeArea(edges: .top)
+        }
+    }
+
+    func heroChip(icon: String, label: String, value: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 13))
+                .foregroundStyle(.white)
+                .frame(width: 32, height: 32)
+                .background(.white.opacity(0.2))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(label)
+                    .font(.system(size: 10))
+                    .foregroundStyle(.white.opacity(0.6))
+                Text(value)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(.white.opacity(0.15))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: - Main Content
+
+    var mainContent: some View {
+        VStack(spacing: 20) {
+            // Quick Pills
+            quickPillsSection
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
+
+            // Vitals Row
+            vitalsSection
+                .padding(.horizontal, 20)
+
+            // Today's Medications
+            medsSection
+
+            // Upcoming Appointments
+            upcomingSection
+
+            // Care Team Peek
+            if !doctors.isEmpty {
+                careTeamSection
+            }
+
+            // Recent Notes
+            if !notes.isEmpty {
+                recentNotesSection
+            }
+
+            Spacer(minLength: 24)
+        }
+    }
+
+    // MARK: - Quick Pills
+
+    var quickPillsSection: some View {
+        HStack(spacing: 10) {
+            quickPill(icon: "pill.fill", label: "Meds", count: medications.count,
+                      gradient: [.tealStart, .tealEnd])
+            quickPill(icon: "stethoscope", label: "Doctors", count: doctors.count,
+                      gradient: [.amberStart, .amberEnd])
+            quickPill(icon: "calendar", label: "Appts", count: appointments.count,
+                      gradient: [.cyanStart, .cyanEnd])
+            quickPill(icon: "doc.fill", label: "Notes", count: notes.count,
+                      gradient: [.purpleStart, .purpleEnd])
+        }
+    }
+
+    func quickPill(icon: String, label: String, count: Int, gradient: [Color]) -> some View {
+        VStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 17))
+                .foregroundStyle(.white)
+                .frame(width: 36, height: 36)
+                .background(
+                    LinearGradient(colors: gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+            Text(label)
+                .font(.system(size: 12))
+                .foregroundStyle(Color.nearBlack)
+            Text("\(count)")
+                .font(.system(size: 10))
+                .foregroundStyle(Color.mutedFg)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 14)
+        .background(Color.cardBg)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .warmShadowLg()
+    }
+
+    // MARK: - Vitals
+
+    var vitalsSection: some View {
+        HStack(spacing: 12) {
+            vitalCard(icon: "heart.fill", iconColor: Color(hex: "E11D48"),
+                      label: "Heart Rate", value: heartRate, unit: heartRate == "–" ? "" : "BPM")
+                .onTapGesture { startEditing(.heartRate) }
+
+            vitalCard(icon: "waveform.path.ecg", iconColor: .cyanStart,
+                      label: "Blood Pressure", value: bloodPressure, unit: "")
+                .onTapGesture { startEditing(.bloodPressure) }
+        }
+    }
+
+    func vitalCard(icon: String, iconColor: Color, label: String, value: String, unit: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 13))
+                    .foregroundStyle(iconColor.opacity(0.8))
+                    .padding(6)
+                    .background(iconColor.opacity(0.12))
+                    .clipShape(Circle())
+                Text(label)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.mutedFg)
+            }
+            HStack(alignment: .lastTextBaseline, spacing: 4) {
+                Text(value)
+                    .font(.system(size: 28, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Color.nearBlack)
+                if !unit.isEmpty {
+                    Text(unit)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(Color.mutedFg)
+                }
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.cardBg)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .warmShadow()
+    }
+
+    // MARK: - Today's Medications
+
+    var medsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Today's Medications")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(Color.nearBlack)
+                Spacer()
+                Text("\(medications.count) total")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.primaryTeal)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(Color.primaryTeal.opacity(0.08))
+                    .clipShape(Capsule())
+            }
+            .padding(.horizontal, 20)
+
+            if medications.isEmpty {
+                Text("No medications added yet. Tap Meds to add one.")
+                    .font(.system(size: 15))
+                    .foregroundStyle(Color.mutedFg)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(24)
+                    .background(Color.cardBg)
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .warmShadow()
+                    .padding(.horizontal, 20)
+            } else {
+                WarmCard {
+                    ForEach(Array(medications.prefix(3).enumerated()), id: \.element.id) { index, med in
+                        MedicationCardRow(medication: med)
+                        if index < min(medications.count, 3) - 1 {
+                            Divider().padding(.leading, 80)
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+            }
+        }
+    }
+
+    // MARK: - Upcoming Appointments
+
+    var upcomingSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Upcoming")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(Color.nearBlack)
+                Spacer()
+                Text("\(upcomingAppointments.count) appts")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.amberStart)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(Color.amberStart.opacity(0.08))
+                    .clipShape(Capsule())
+            }
+            .padding(.horizontal, 20)
+
+            if upcomingAppointments.isEmpty {
+                Text("No upcoming appointments.")
+                    .font(.system(size: 15))
+                    .foregroundStyle(Color.mutedFg)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(24)
+                    .background(Color.cardBg)
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .warmShadow()
+                    .padding(.horizontal, 20)
+            } else {
+                WarmCard {
+                    ForEach(Array(upcomingAppointments.enumerated()), id: \.element.id) { index, appt in
+                        AppointmentCardRow(appointment: appt)
+                        if index < upcomingAppointments.count - 1 {
+                            Divider().padding(.leading, 82)
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+            }
+        }
+    }
+
+    // MARK: - Care Team
+
+    var careTeamSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Care Team")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(Color.nearBlack)
+                Spacer()
+                Text("\(doctors.count) doctors")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color(hex: "059669"))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(Color(hex: "059669").opacity(0.08))
+                    .clipShape(Capsule())
+            }
+            .padding(.horizontal, 20)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(doctors) { doc in
+                        let style = SpecialtyStyle.forSpecialty(doc.specialty)
+                        let initial = doc.name.split(separator: " ").last?.first.map(String.init) ?? "D"
+
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text(initial)
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .frame(width: 44, height: 44)
+                                .background(
+                                    LinearGradient(colors: style.gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+
+                            Text(doc.name)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(Color.nearBlack)
+                                .lineLimit(1)
+                            Text(doc.specialty)
+                                .font(.system(size: 11))
+                                .foregroundStyle(Color.mutedFg)
+                                .lineLimit(1)
+                        }
+                        .frame(width: 140)
+                        .padding(16)
+                        .background(Color.cardBg)
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .warmShadow()
+                    }
+                }
+                .padding(.horizontal, 20)
+            }
+        }
+    }
+
+    // MARK: - Recent Notes
+
+    var recentNotesSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Recent Notes")
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(Color.nearBlack)
+                .padding(.horizontal, 20)
+
+            VStack(spacing: 10) {
+                ForEach(notes.prefix(2)) { note in
+                    let style = CategoryStyle.forCategory(note.category)
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(alignment: .top) {
+                            Text(note.title)
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundStyle(Color.nearBlack)
+                                .lineLimit(1)
+                            Spacer()
+                            Text(note.category)
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundStyle(style.color)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 3)
+                                .background(style.color.opacity(0.1))
+                                .clipShape(Capsule())
+                        }
+                        Text(note.content)
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color.mutedFg)
+                            .lineLimit(2)
+                        Text(note.createdAt, format: .dateTime.month(.wide).day().year())
+                            .font(.system(size: 11))
+                            .foregroundStyle(Color.mutedFg.opacity(0.5))
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.cardBg)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .warmShadow()
+                }
+            }
+            .padding(.horizontal, 20)
+        }
+    }
+
+    // MARK: - Vital Editing
+
+    private func startEditing(_ type: VitalType) {
+        editingVital = type
+        vitalInput = type == .heartRate ? heartRate : bloodPressure
+        if vitalInput == "–" { vitalInput = "" }
+    }
+
+    private func saveVital() {
+        let trimmed = vitalInput.trimmingCharacters(in: .whitespaces)
+        if editingVital == .heartRate {
+            heartRate = trimmed.isEmpty ? "–" : trimmed
+        } else {
+            bloodPressure = trimmed.isEmpty ? "–" : trimmed
+        }
+        editingVital = nil
+    }
+}
