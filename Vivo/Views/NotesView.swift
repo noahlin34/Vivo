@@ -146,6 +146,7 @@ struct NoteDetailSheet: View {
     let note: HealthNote
     let onDelete: () -> Void
     @Environment(\.dismiss) private var dismiss
+    @State private var showEdit = false
 
     var body: some View {
         let style = CategoryStyle.forCategory(note.category)
@@ -222,10 +223,95 @@ struct NoteDetailSheet: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") { dismiss() }
                 }
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Edit") { showEdit = true }
+                }
+            }
+            .sheet(isPresented: $showEdit) {
+                EditNoteView(note: note)
             }
         }
         .presentationDetents([.large])
         .presentationCornerRadius(24)
+    }
+}
+
+// MARK: - Edit Note Sheet
+
+struct EditNoteView: View {
+    let note: HealthNote
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var title: String
+    @State private var content: String
+    @State private var category: String
+
+    private let categories = ["Vitals", "Medications", "Lifestyle", "Questions", "Symptoms", "General"]
+
+    init(note: HealthNote) {
+        self.note = note
+        _title = State(initialValue: note.title)
+        _content = State(initialValue: note.content)
+        _category = State(initialValue: note.category)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Note Info") {
+                    TextField("Title", text: $title)
+                }
+                Section("Category") {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 8) {
+                        ForEach(categories, id: \.self) { cat in
+                            let style = CategoryStyle.forCategory(cat)
+                            let isSelected = category == cat
+                            Button { category = cat } label: {
+                                Text(cat)
+                                    .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                                    .foregroundStyle(isSelected ? .white : Color.mutedFg)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 8)
+                                    .frame(maxWidth: .infinity)
+                                    .background {
+                                        if isSelected {
+                                            LinearGradient(colors: style.gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
+                                        } else {
+                                            Color.mutedBg
+                                        }
+                                    }
+                                    .clipShape(Capsule())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+                Section("Content") {
+                    TextEditor(text: $content)
+                        .frame(minHeight: 120)
+                }
+            }
+            .navigationTitle("Edit Note")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") { save() }
+                        .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+        }
+        .presentationCornerRadius(24)
+    }
+
+    private func save() {
+        note.title = title.trimmingCharacters(in: .whitespaces)
+        note.content = content.trimmingCharacters(in: .whitespaces)
+        note.category = category
+        dismiss()
     }
 }
 
