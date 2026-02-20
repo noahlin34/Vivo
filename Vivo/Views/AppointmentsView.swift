@@ -122,6 +122,7 @@ struct AppointmentDetailSheet: View {
     let appointment: Appointment
     let onDelete: () -> Void
     @Environment(\.dismiss) private var dismiss
+    @State private var showEdit = false
 
     var body: some View {
         NavigationStack {
@@ -196,6 +197,12 @@ struct AppointmentDetailSheet: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") { dismiss() }
                 }
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Edit") { showEdit = true }
+                }
+            }
+            .sheet(isPresented: $showEdit) {
+                EditAppointmentView(appointment: appointment)
             }
         }
         .presentationDetents([.medium])
@@ -304,6 +311,81 @@ struct AddAppointmentView: View {
             location: location.trimmingCharacters(in: .whitespaces),
             notes: notes.trimmingCharacters(in: .whitespaces)
         ))
+        dismiss()
+    }
+}
+
+// MARK: - Edit Appointment Sheet
+
+struct EditAppointmentView: View {
+    let appointment: Appointment
+    @Environment(\.dismiss) private var dismiss
+    @Query(sort: \Doctor.createdAt) private var doctors: [Doctor]
+
+    @State private var title: String
+    @State private var doctorName: String
+    @State private var date: Date
+    @State private var time: String
+    @State private var location: String
+    @State private var notes: String
+
+    init(appointment: Appointment) {
+        self.appointment = appointment
+        _title = State(initialValue: appointment.title)
+        _doctorName = State(initialValue: appointment.doctorName)
+        _date = State(initialValue: appointment.date)
+        _time = State(initialValue: appointment.time)
+        _location = State(initialValue: appointment.location)
+        _notes = State(initialValue: appointment.notes)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Appointment Info") {
+                    TextField("Title", text: $title)
+                    if doctors.isEmpty {
+                        TextField("Doctor Name", text: $doctorName)
+                    } else {
+                        Picker("Doctor", selection: $doctorName) {
+                            Text("None").tag("")
+                            ForEach(doctors) { doc in
+                                Text(doc.name).tag(doc.name)
+                            }
+                        }
+                    }
+                }
+                Section("Date & Time") {
+                    DatePicker("Date", selection: $date, displayedComponents: .date)
+                    TextField("Time (e.g. 10:00 AM)", text: $time)
+                }
+                Section("Details") {
+                    TextField("Location", text: $location)
+                    TextField("Notes", text: $notes)
+                }
+            }
+            .navigationTitle("Edit Appointment")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") { save() }
+                        .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+        }
+        .presentationCornerRadius(24)
+    }
+
+    private func save() {
+        appointment.title = title.trimmingCharacters(in: .whitespaces)
+        appointment.doctorName = doctorName.trimmingCharacters(in: .whitespaces)
+        appointment.date = date
+        appointment.time = time.trimmingCharacters(in: .whitespaces)
+        appointment.location = location.trimmingCharacters(in: .whitespaces)
+        appointment.notes = notes.trimmingCharacters(in: .whitespaces)
         dismiss()
     }
 }
