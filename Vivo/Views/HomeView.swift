@@ -13,18 +13,10 @@ struct HomeView: View {
     @Query private var doctors: [Doctor]
     @Query(sort: \HealthNote.createdAt, order: .reverse) private var notes: [HealthNote]
 
-    @AppStorage("heartRate") private var heartRate: String = "–"
-    @AppStorage("bloodPressure") private var bloodPressure: String = "–"
-
-    @State private var editingVital: VitalType? = nil
-    @State private var vitalInput: String = ""
-
     private var topSafeArea: CGFloat {
         (UIApplication.shared.connectedScenes.first as? UIWindowScene)?
             .windows.first?.safeAreaInsets.top ?? 0
     }
-
-    enum VitalType { case heartRate, bloodPressure }
 
     private var upcomingAppointments: [Appointment] {
         appointments.filter { $0.date >= Calendar.current.startOfDay(for: Date()) }
@@ -42,13 +34,6 @@ struct HomeView: View {
         }
         .background(Color.bg)
         .ignoresSafeArea(edges: .top)
-        .alert(editingVital == .heartRate ? "Heart Rate (BPM)" : "Blood Pressure",
-               isPresented: Binding(get: { editingVital != nil }, set: { if !$0 { editingVital = nil } })) {
-            TextField(editingVital == .heartRate ? "e.g. 72" : "e.g. 120/80", text: $vitalInput)
-                .keyboardType(editingVital == .heartRate ? .numberPad : .default)
-            Button("Save") { saveVital() }
-            Button("Cancel", role: .cancel) { editingVital = nil }
-        }
     }
 
     // MARK: - Hero
@@ -141,10 +126,6 @@ struct HomeView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 16)
 
-            // Vitals Row
-            vitalsSection
-                .padding(.horizontal, 20)
-
             // Today's Medications
             medsSection
 
@@ -202,51 +183,6 @@ struct HomeView: View {
         .background(Color.cardBg)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .warmShadowLg()
-    }
-
-    // MARK: - Vitals
-
-    var vitalsSection: some View {
-        HStack(spacing: 12) {
-            vitalCard(icon: "heart.fill", iconColor: Color(hex: "E11D48"),
-                      label: "Heart Rate", value: heartRate, unit: heartRate == "–" ? "" : "BPM")
-                .onTapGesture { startEditing(.heartRate) }
-
-            vitalCard(icon: "waveform.path.ecg", iconColor: .cyanStart,
-                      label: "Blood Pressure", value: bloodPressure, unit: "")
-                .onTapGesture { startEditing(.bloodPressure) }
-        }
-    }
-
-    func vitalCard(icon: String, iconColor: Color, label: String, value: String, unit: String) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 13))
-                    .foregroundStyle(iconColor.opacity(0.8))
-                    .padding(6)
-                    .background(iconColor.opacity(0.12))
-                    .clipShape(Circle())
-                Text(label)
-                    .font(.system(size: 12))
-                    .foregroundStyle(Color.mutedFg)
-            }
-            HStack(alignment: .lastTextBaseline, spacing: 4) {
-                Text(value)
-                    .font(.system(size: 28, weight: .semibold, design: .rounded))
-                    .foregroundStyle(Color.nearBlack)
-                if !unit.isEmpty {
-                    Text(unit)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(Color.mutedFg)
-                }
-            }
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .warmShadow()
     }
 
     // MARK: - Today's Medications
@@ -437,21 +373,4 @@ struct HomeView: View {
         }
     }
 
-    // MARK: - Vital Editing
-
-    private func startEditing(_ type: VitalType) {
-        editingVital = type
-        vitalInput = type == .heartRate ? heartRate : bloodPressure
-        if vitalInput == "–" { vitalInput = "" }
-    }
-
-    private func saveVital() {
-        let trimmed = vitalInput.trimmingCharacters(in: .whitespaces)
-        if editingVital == .heartRate {
-            heartRate = trimmed.isEmpty ? "–" : trimmed
-        } else {
-            bloodPressure = trimmed.isEmpty ? "–" : trimmed
-        }
-        editingVital = nil
-    }
 }
