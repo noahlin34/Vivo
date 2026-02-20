@@ -90,6 +90,7 @@ struct MedicationDetailSheet: View {
     let medication: Medication
     let onDelete: () -> Void
     @Environment(\.dismiss) private var dismiss
+    @State private var showEdit = false
 
     private var color: Color { .medColor(medication.colorIndex) }
 
@@ -163,6 +164,12 @@ struct MedicationDetailSheet: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") { dismiss() }
                 }
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Edit") { showEdit = true }
+                }
+            }
+            .sheet(isPresented: $showEdit) {
+                EditMedicationView(medication: medication)
             }
         }
         .presentationDetents([.medium])
@@ -272,6 +279,89 @@ struct AddMedicationView: View {
             colorIndex: colorIndex,
             notes: notes.trimmingCharacters(in: .whitespaces)
         ))
+        dismiss()
+    }
+}
+
+// MARK: - Edit Medication Sheet
+
+struct EditMedicationView: View {
+    let medication: Medication
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var name: String
+    @State private var dosage: String
+    @State private var frequency: String
+    @State private var scheduledTime: Date
+    @State private var colorIndex: Int
+    @State private var notes: String
+
+    private let frequencies = ["Once daily", "Twice daily", "Three times daily", "As needed"]
+    private let colorNames = ["Teal", "Green", "Amber", "Purple", "Cyan", "Rose"]
+    private let colorHexes = Color.medHexColors
+
+    init(medication: Medication) {
+        self.medication = medication
+        _name = State(initialValue: medication.name)
+        _dosage = State(initialValue: medication.dosage)
+        _frequency = State(initialValue: medication.frequency)
+        _scheduledTime = State(initialValue: medication.scheduledTime)
+        _colorIndex = State(initialValue: medication.colorIndex)
+        _notes = State(initialValue: medication.notes)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Medication Info") {
+                    TextField("Name", text: $name)
+                    TextField("Dosage (e.g. 10mg)", text: $dosage)
+                    TextField("Notes (optional)", text: $notes)
+                }
+                Section("Schedule") {
+                    Picker("Frequency", selection: $frequency) {
+                        ForEach(frequencies, id: \.self) { Text($0) }
+                    }
+                    DatePicker("Time", selection: $scheduledTime, displayedComponents: .hourAndMinute)
+                }
+                Section("Color") {
+                    Picker("Color", selection: $colorIndex) {
+                        ForEach(0..<colorNames.count, id: \.self) { i in
+                            HStack {
+                                Circle()
+                                    .fill(Color(hex: colorHexes[i]))
+                                    .frame(width: 16, height: 16)
+                                Text(colorNames[i])
+                            }
+                            .tag(i)
+                        }
+                    }
+                    .pickerStyle(.inline)
+                    .labelsHidden()
+                }
+            }
+            .navigationTitle("Edit Medication")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") { save() }
+                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+        }
+        .presentationCornerRadius(24)
+    }
+
+    private func save() {
+        medication.name = name.trimmingCharacters(in: .whitespaces)
+        medication.dosage = dosage.trimmingCharacters(in: .whitespaces)
+        medication.frequency = frequency
+        medication.scheduledTime = scheduledTime
+        medication.colorIndex = colorIndex
+        medication.notes = notes.trimmingCharacters(in: .whitespaces)
         dismiss()
     }
 }
