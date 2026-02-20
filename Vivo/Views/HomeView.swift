@@ -32,6 +32,7 @@ struct HomeView: View {
                 heroSection
                 mainContent
             }
+            .safeAreaPadding(.bottom)
         }
         .background(Color.bg)
         .ignoresSafeArea(edges: .top)
