@@ -13,6 +13,16 @@ Vivo is a personal health management iOS app built with SwiftUI + SwiftData + Cl
 - **Team**: TT5ULK557T
 - **Project type**: Xcode 26 file-system-synchronized (all `.swift` files in subdirectories are auto-included — no need to add files to the project manually)
 
+## Git Workflow
+
+Use **atomic commits** — one logical change per commit. Do not bundle multiple unrelated changes into a single commit. Examples of correct granularity:
+
+- Adding a new field to a model → one commit
+- Updating the UI to use that field → separate commit
+- A bug fix → its own commit, separate from any feature work
+
+Each commit should build and be coherent on its own. After completing each logical unit of work, commit before moving to the next.
+
 ## Building & Testing
 
 ```bash
