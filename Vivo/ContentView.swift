@@ -18,7 +18,7 @@ struct ContentView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            HomeView().tag(0)
+            HomeView(selectedTab: $selectedTab).tag(0)
             MedicationsView().tag(1)
             DoctorsView().tag(2)
             AppointmentsView().tag(3)

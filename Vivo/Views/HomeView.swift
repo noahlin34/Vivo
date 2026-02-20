@@ -8,6 +8,7 @@ import SwiftData
 import UIKit
 
 struct HomeView: View {
+    @Binding var selectedTab: Int
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Medication.scheduledTime) private var medications: [Medication]
     @Query(sort: \Appointment.date) private var appointments: [Appointment]
@@ -167,38 +168,44 @@ struct HomeView: View {
     var quickPillsSection: some View {
         HStack(spacing: 10) {
             quickPill(icon: "pill.fill", label: "Meds", count: medications.count,
-                      gradient: [.tealStart, .tealEnd])
+                      gradient: [.tealStart, .tealEnd], tab: 1)
             quickPill(icon: "stethoscope", label: "Doctors", count: doctors.count,
-                      gradient: [.amberStart, .amberEnd])
+                      gradient: [.amberStart, .amberEnd], tab: 2)
             quickPill(icon: "calendar", label: "Appts", count: appointments.count,
-                      gradient: [.cyanStart, .cyanEnd])
+                      gradient: [.cyanStart, .cyanEnd], tab: 3)
             quickPill(icon: "doc.fill", label: "Notes", count: notes.count,
-                      gradient: [.purpleStart, .purpleEnd])
+                      gradient: [.purpleStart, .purpleEnd], tab: 4)
         }
     }
 
-    func quickPill(icon: String, label: String, count: Int, gradient: [Color]) -> some View {
-        VStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.system(size: 17))
-                .foregroundStyle(.white)
-                .frame(width: 36, height: 36)
-                .background(
-                    LinearGradient(colors: gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
-            Text(label)
-                .font(.system(size: 12))
-                .foregroundStyle(Color.nearBlack)
-            Text("\(count)")
-                .font(.system(size: 10))
-                .foregroundStyle(Color.mutedFg)
+    func quickPill(icon: String, label: String, count: Int, gradient: [Color], tab: Int) -> some View {
+        Button {
+            selectedTab = tab
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        } label: {
+            VStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 17))
+                    .foregroundStyle(.white)
+                    .frame(width: 36, height: 36)
+                    .background(
+                        LinearGradient(colors: gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+                Text(label)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.nearBlack)
+                Text("\(count)")
+                    .font(.system(size: 10))
+                    .foregroundStyle(Color.mutedFg)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(Color.cardBg)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .warmShadowLg()
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 14)
-        .background(Color.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .warmShadowLg()
+        .buttonStyle(.plain)
     }
 
     // MARK: - Today's Medications
