@@ -90,6 +90,7 @@ struct DoctorDetailSheet: View {
     let doctor: Doctor
     let onDelete: () -> Void
     @Environment(\.dismiss) private var dismiss
+    @State private var showEdit = false
 
     var body: some View {
         let style = SpecialtyStyle.forSpecialty(doctor.specialty)
@@ -165,6 +166,12 @@ struct DoctorDetailSheet: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") { dismiss() }
                 }
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Edit") { showEdit = true }
+                }
+            }
+            .sheet(isPresented: $showEdit) {
+                EditDoctorView(doctor: doctor)
             }
         }
         .presentationDetents([.medium])
@@ -257,6 +264,65 @@ struct AddDoctorView: View {
             email: email.trimmingCharacters(in: .whitespaces),
             address: address.trimmingCharacters(in: .whitespaces)
         ))
+        dismiss()
+    }
+}
+
+// MARK: - Edit Doctor Sheet
+
+struct EditDoctorView: View {
+    let doctor: Doctor
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var name: String
+    @State private var specialty: String
+    @State private var phone: String
+    @State private var email: String
+    @State private var address: String
+
+    init(doctor: Doctor) {
+        self.doctor = doctor
+        _name = State(initialValue: doctor.name)
+        _specialty = State(initialValue: doctor.specialty)
+        _phone = State(initialValue: doctor.phone)
+        _email = State(initialValue: doctor.email)
+        _address = State(initialValue: doctor.address)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Doctor Info") {
+                    TextField("Full Name", text: $name)
+                    TextField("Specialty", text: $specialty)
+                }
+                Section("Contact") {
+                    TextField("Phone", text: $phone).keyboardType(.phonePad)
+                    TextField("Email", text: $email).keyboardType(.emailAddress)
+                    TextField("Address", text: $address)
+                }
+            }
+            .navigationTitle("Edit Doctor")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") { save() }
+                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+        }
+        .presentationCornerRadius(24)
+    }
+
+    private func save() {
+        doctor.name = name.trimmingCharacters(in: .whitespaces)
+        doctor.specialty = specialty.trimmingCharacters(in: .whitespaces)
+        doctor.phone = phone.trimmingCharacters(in: .whitespaces)
+        doctor.email = email.trimmingCharacters(in: .whitespaces)
+        doctor.address = address.trimmingCharacters(in: .whitespaces)
         dismiss()
     }
 }
