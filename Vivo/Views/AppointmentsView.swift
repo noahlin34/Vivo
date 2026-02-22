@@ -79,7 +79,7 @@ struct AppointmentsView: View {
                     }
                 }
 
-                Spacer(minLength: 40)
+                Spacer(minLength: 100)
             }
         }
         .background(Color.bg)

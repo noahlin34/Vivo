@@ -152,7 +152,7 @@ struct HomeView: View {
                 recentNotesSection
             }
 
-            Spacer(minLength: 24)
+            Spacer(minLength: 100)
         }
     }
 

@@ -103,7 +103,7 @@ struct NotesView: View {
                     .padding(.horizontal, 20)
                 }
 
-                Spacer(minLength: 40)
+                Spacer(minLength: 100)
             }
         }
         .background(Color.bg)
