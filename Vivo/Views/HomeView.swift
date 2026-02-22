@@ -5,6 +5,7 @@
 
 import SwiftUI
 import SwiftData
+import UIKit
 
 struct HomeView: View {
     @Binding var selectedTab: Int
@@ -14,6 +15,7 @@ struct HomeView: View {
     @Query private var doctors: [Doctor]
     @Query(sort: \HealthNote.createdAt, order: .reverse) private var notes: [HealthNote]
 
+    @State private var topSafeArea: CGFloat = 0
     @State private var selectedMed: Medication? = nil
     @State private var selectedAppt: Appointment? = nil
 
@@ -31,7 +33,8 @@ struct HomeView: View {
                 mainContent
             }
         }
-        .background(Color.bg.ignoresSafeArea(edges: .top))
+        .background(Color.bg)
+        .ignoresSafeArea(edges: .top)
         .sheet(item: $selectedMed) { med in
             MedicationDetailSheet(medication: med) {
                 modelContext.delete(med)
@@ -43,6 +46,10 @@ struct HomeView: View {
                 modelContext.delete(appt)
                 selectedAppt = nil
             }
+        }
+        .onAppear {
+            topSafeArea = (UIApplication.shared.connectedScenes.first as? UIWindowScene)?
+                .windows.first?.safeAreaInsets.top ?? 0
         }
     }
 
@@ -60,7 +67,7 @@ struct HomeView: View {
                         .font(.system(size: 13))
                         .foregroundStyle(.white.opacity(0.7))
                 }
-                .padding(.top, 16)
+                .padding(.top, topSafeArea + 16)
 
                 Text("My Health")
                     .font(.system(size: 32, weight: .regular, design: .serif))
