@@ -15,11 +15,12 @@ Vivo is a personal health management iOS app built with SwiftUI + SwiftData + Cl
 
 ## Git Workflow
 
-Use **atomic commits** — one logical change per commit. Do not bundle multiple unrelated changes into a single commit. Examples of correct granularity:
+Use **atomic commits** for essentially everything — one logical change per commit. Do not bundle multiple unrelated changes into a single commit. Examples of correct granularity:
 
 - Adding a new field to a model → one commit
 - Updating the UI to use that field → separate commit
 - A bug fix → its own commit, separate from any feature work
+- Updating a shared component → separate from updating the views that use it
 
 Each commit should build and be coherent on its own. After completing each logical unit of work, commit before moving to the next.
 
@@ -40,7 +41,7 @@ After making changes, always run a build to confirm no compiler errors before fi
 ```
 Vivo/
 ├── VivoApp.swift          # @main, ModelContainer + CloudKit config
-├── ContentView.swift      # TabView root, UITabBarAppearance setup
+├── ContentView.swift      # TabView root + CustomTabBar
 ├── Models/
 │   ├── Medication.swift
 │   ├── Doctor.swift
@@ -60,13 +61,15 @@ Vivo/
 All models use `@Model final class` and are registered in `VivoApp.swift`.
 
 ```swift
-Medication:   name, dosage, frequency, scheduledTime(Date), colorIndex(Int 0-5), createdAt
+Medication:   name, dosage, frequency, scheduledTime(Date), colorIndex(Int 0-5), notes(String), createdAt
 Doctor:       name, specialty, phone, email, address, colorIndex(Int), createdAt
-Appointment:  title, doctorName, date(Date), time(String), location, notes, createdAt
+Appointment:  title, doctorName, date(Date), time(String), location, notes(String), createdAt
 HealthNote:   title, content, category(String), createdAt
 ```
 
 CloudKit sync is configured with `.private("iCloud.com.noahlin.Vivo")`. Testing sync requires a physical device signed into iCloud with the container created in the Apple Developer Portal.
+
+**Simulator**: CloudKit is skipped on simulator via `#if targetEnvironment(simulator)` — uses local-only SwiftData storage.
 
 ## Design System
 
@@ -103,6 +106,8 @@ Color.purpleStart / .purpleEnd   // #7C3AED / #A78BFA
 
 `Color.medColor(index)` — 0=teal, 1=green, 2=amber, 3=purple, 4=cyan, 5=rose(`#E11D48`)
 
+`Color.medHexColors` — array of 6 hex strings in the same order, used for color picker UI.
+
 ### Note Categories
 
 `CategoryStyle.forCategory(_ c: String)` returns `.color` and `.gradient`:
@@ -120,6 +125,8 @@ Color.purpleStart / .purpleEnd   // #7C3AED / #A78BFA
 
 ### Cards
 
+Each card component is **self-contained** — it includes its own background, clip shape, and shadow. Do NOT wrap card rows in an additional `WarmCard`; just use `VStack(spacing: 12)` directly.
+
 ```swift
 .background(Color.cardBg)
 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
@@ -130,42 +137,67 @@ Color.purpleStart / .purpleEnd   // #7C3AED / #A78BFA
 
 ### Tab Bar
 
-Configured via `UITabBarAppearance` in `ContentView.init()`. Background is `#F6F2EC` (warm cream). Active tint is `Color.primaryTeal` (`.tint(Color(hex: "0D7C66"))`).
+The system tab bar is **hidden** (`UITabBar.appearance().isHidden = true` in `ContentView.init()`). A custom `CustomTabBar` is injected via `.safeAreaInset(edge: .bottom, spacing: 0)` on the `TabView`.
+
+`CustomTabBar` features:
+- Frosted glass background: `Color.white.opacity(0.7)` + `.ultraThinMaterial`, extends behind home indicator via `.ignoresSafeArea(edges: .bottom)`
+- 24pt gradient fade above the bar (non-interactive)
+- Active tab: teal icon + glow background + dot indicator, `-2pt` offset
+- Inactive tab: muted icon, no glow
+- Spring animation + light haptic on tap
 
 ## Shared Components (SharedComponents.swift)
 
 Reuse these — don't recreate them inline:
 
-- `GradientAddButton(gradient:, action:)` — floating `+` button with gradient background
-- `GradientDateBadge(date:, isPast:)` — teal gradient date badge; muted style when past
-- `MedicationCardRow(medication:)` — color stripe left + pill icon card row
-- `DoctorCardRow(doctor:)` — specialty gradient avatar card row
-- `AppointmentCardRow(appointment:, showChevron:)` — date badge + title/doctor row
+- `GradientAddButton(gradient:, action:)` — floating `+` button, 16pt corner radius, gradient background
+- `GradientDateBadge(date:, isPast:, isToday:)` — 52×52pt date badge; muted when past, amber gradient when today, teal-cyan otherwise
+- `MedicationCardRow(medication:)` — self-contained card: 6px color stripe + pill icon + name/dosage/time
+- `DoctorCardRow(doctor:)` — self-contained card: specialty gradient avatar + name/specialty
+- `AppointmentCardRow(appointment:, showTodayBadge:)` — self-contained card: date badge + title/doctor; amber top stripe + "Today" pill when today; 0.55 opacity when past
 - `NoteCard(note:, onDelete:)` — gradient top bar + swipe-to-delete + context menu
-- `CategoryChip(title:, gradient:, isSelected:, action:)` — filter pill
-- `SectionLabel(title:, dotColor:)` — uppercase section header with dot
-- `WarmCard` — plain white card with corner radius and warm shadow
+- `CategoryChip(title:, gradient:, isSelected:, action:)` — filter pill; gradient bg when selected, white when not
+- `SectionLabel(title:, dotColor:)` — uppercase section header with colored dot
+- `WarmCard` — generic container: white background, 18pt corner radius, warm shadow
 
 ## Hero Safe Area Pattern
 
-The home screen hero extends the gradient behind the Dynamic Island. The pattern used:
+The home screen hero extends the gradient behind the Dynamic Island. The approach:
 
 ```swift
-// On the ScrollView:
-.ignoresSafeArea(edges: .top)
+// 1. ScrollView ignores top safe area so content can start from y=0:
+ScrollView { ... }
+    .ignoresSafeArea(edges: .top)
 
-// Hero content uses dynamic top padding:
-private var topSafeArea: CGFloat {
-    (UIApplication.shared.connectedScenes.first as? UIWindowScene)?
+// 2. Hero content uses UIKit to measure the safe area (NOT GeometryReader):
+@State private var topSafeArea: CGFloat = 0
+
+.onAppear {
+    topSafeArea = (UIApplication.shared.connectedScenes.first as? UIWindowScene)?
         .windows.first?.safeAreaInsets.top ?? 0
 }
-// Applied as: .padding(.top, topSafeArea + 16)
 
-// Hero background gradient:
-.ignoresSafeArea(edges: .top)
+// 3. Hero content is pushed below the status bar:
+.padding(.top, topSafeArea + 16)
+
+// 4. Hero background gradient extends behind the status bar:
+.background {
+    LinearGradient(...)
+        .ignoresSafeArea(edges: .top)
+}
 ```
 
-Do NOT use a `GeometryReader` inside an `ignoresSafeArea` context to measure safe area insets — it will return 0. Use the UIKit `UIWindowScene` approach above.
+**Do NOT** use `GeometryReader` inside an `ignoresSafeArea` context — it returns 0.
+
+## Bottom Scroll Clearance
+
+The custom tab bar is ~100pt tall. The `safeAreaInset` that injects it does **not** reliably propagate as scroll content inset when the parent ScrollView uses `.ignoresSafeArea(edges: .top)`. All scroll views must include an explicit bottom spacer:
+
+```swift
+Spacer(minLength: 100)
+```
+
+This is present in every tab's scroll content (HomeView, MedicationsView, DoctorsView, AppointmentsView, NotesView). Do not reduce this value.
 
 ## Common SwiftUI Pitfalls in This Project
 
@@ -185,9 +217,27 @@ Swift cannot resolve shorthand dot-syntax for custom `Color` static members when
 
 This applies to all custom Color tokens. `.white`, `.black`, and built-in colors work fine with shorthand.
 
+### `.background { Group { if ... AnyShapeStyle } }` doesn't compile
+
+When using conditional backgrounds, use the `@ViewBuilder` trailing closure form with concrete view types:
+
+```swift
+// WRONG — generic parameter inference fails
+.background(Group { if ... { AnyShapeStyle(...) } })
+
+// CORRECT
+.background {
+    if condition {
+        Color.mutedBg
+    } else {
+        LinearGradient(...)
+    }
+}
+```
+
 ### SourceKit false positives
 
-SourceKit sometimes reports "Cannot find type 'Medication' in scope" etc. when editing individual files in isolation. These are not real compiler errors — `xcodebuild` will succeed. Always verify with an actual build.
+SourceKit frequently reports "Cannot find type 'Medication' in scope", "Type 'Color' has no member 'nearBlack'", etc. when editing individual files in isolation. These are **not real errors** — `xcodebuild` will succeed. Always verify with an actual build before assuming something is broken.
 
 ### UIColor from custom Color
 
@@ -200,13 +250,43 @@ UIColor(red: 246/255, green: 242/255, blue: 236/255, alpha: 0.97)
 ## Navigation & Sheets Pattern
 
 Each tab view uses:
-- `@State private var selected: ModelType? = nil` for detail/edit sheets
-- `.sheet(item: $selected)` for bottom sheets
-- `.presentationDetents([.medium])` or `.large` depending on content
-- Swipe-to-delete via `.swipeActions(edge: .trailing)` with `role: .destructive`
+- `@State private var selected: ModelType? = nil` for detail sheets
+- `.sheet(item: $selected)` — sheet appears when non-nil, dismissed by setting to nil
+- Detail sheets: `.presentationDetents([.medium])` + `.presentationCornerRadius(24)`
+- Full-content sheets (notes, edit forms): `.presentationDetents([.large])` or no detent
+- Each detail sheet has an **Edit** button in the toolbar that opens the corresponding `EditXxxView`
+- Deleting: red button in detail sheet calls `onDelete()` closure + `dismiss()`
+- No swipe-to-delete on list rows — delete only from the detail sheet
+
+## Edit Pattern
+
+All four model types support editing. Each edit view follows the same pattern:
+
+```swift
+struct EditFooView: View {
+    let foo: Foo
+    @Environment(\.dismiss) private var dismiss
+
+    // @State copies initialized from the model:
+    @State private var field: Type
+
+    init(foo: Foo) {
+        self.foo = foo
+        _field = State(initialValue: foo.field)
+    }
+
+    private func save() {
+        foo.field = field  // mutate @Model directly — SwiftData autosaves
+        dismiss()
+    }
+}
+```
+
+SwiftData `@Model` objects are reference types with `@Observable`. Mutating their properties directly is sufficient — no need to call `modelContext.save()`.
 
 ## CloudKit Notes
 
 - Container `iCloud.com.noahlin.Vivo` must exist in Apple Developer Portal → Identifiers → iCloud Containers
 - App ID must have iCloud (CloudKit) capability enabled
 - CloudKit sync only works on a physical device signed into iCloud (not simulator)
+- Simulator uses local-only storage (`#if targetEnvironment(simulator)` skips CloudKit config)
