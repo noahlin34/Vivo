@@ -62,10 +62,12 @@ All models use `@Model final class` and are registered in `VivoApp.swift`.
 
 ```swift
 Medication:   name, dosage, frequency, scheduledTime(Date), colorIndex(Int 0-5), notes(String), createdAt
-Doctor:       name, specialty, phone, email, address, colorIndex(Int), createdAt
+Doctor:       name, specialty, phone, email, address, createdAt
 Appointment:  title, doctorName, date(Date), time(String), location, notes(String), createdAt
 HealthNote:   title, content, category(String), createdAt
 ```
+
+Note: `Doctor` has no `colorIndex` — doctor color is derived entirely from specialty via `SpecialtyStyle.forSpecialty()`.
 
 CloudKit sync is configured with `.private("iCloud.com.noahlin.Vivo")`. Testing sync requires a physical device signed into iCloud with the container created in the Apple Developer Portal.
 
@@ -256,7 +258,23 @@ Each tab view uses:
 - Full-content sheets (notes, edit forms): `.presentationDetents([.large])` or no detent
 - Each detail sheet has an **Edit** button in the toolbar that opens the corresponding `EditXxxView`
 - Deleting: red button in detail sheet calls `onDelete()` closure + `dismiss()`
-- No swipe-to-delete on list rows — delete only from the detail sheet
+- `NoteCard` has **built-in swipe-to-delete** (`.swipeActions`) and a context menu delete — both call `onDelete()`
+- All other list rows (Medications, Doctors, Appointments) have no swipe-to-delete — delete only from the detail sheet
+
+## Tab-Specific Features
+
+### HomeView
+- Receives a `selectedTab: Binding<Int>` parameter — used by quick-pill buttons to navigate to other tabs
+- Hero chips show today's med count and next appointment date
+
+### AppointmentsView
+- Divides list into **Upcoming** and **Past** sections using `SectionLabel`
+- Past appointments are shown in reverse chronological order and rendered at 0.55 opacity (handled by `AppointmentCardRow`)
+
+### NotesView
+- Has a **search bar** (`@State private var searchText`) that filters notes by title/content
+- Has **category filter chips** (`@State private var selectedCategory`) using `CategoryChip` — one chip per category plus "All"
+- `NoteCard` handles its own delete UI via swipe-to-delete and context menu
 
 ## Edit Pattern
 
