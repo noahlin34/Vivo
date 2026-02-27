@@ -145,10 +145,8 @@ struct AppointmentDetailSheet: View {
                               label: "Date",
                               value: appointment.date.formatted(.dateTime.weekday(.wide).month(.wide).day().year()))
 
-                    if !appointment.time.isEmpty {
-                        detailRow(icon: "clock", iconColor: Color.primaryTeal,
-                                  label: "Time", value: appointment.time)
-                    }
+                    detailRow(icon: "clock", iconColor: Color.primaryTeal,
+                              label: "Time", value: appointment.date.formatted(.dateTime.hour().minute()))
                     if !appointment.location.isEmpty {
                         detailRow(icon: "mappin", iconColor: Color.amberStart,
                                   label: "Location", value: appointment.location)
@@ -243,8 +241,7 @@ struct AddAppointmentView: View {
 
     @State private var title = ""
     @State private var doctorName = ""
-    @State private var date = Date()
-    @State private var time = ""
+    @State private var date = Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: Date()) ?? Date()
     @State private var location = ""
     @State private var notes = ""
 
@@ -279,7 +276,7 @@ struct AddAppointmentView: View {
 
                 Section("Date & Time") {
                     DatePicker("Date", selection: $date, displayedComponents: .date)
-                    TextField("Time (e.g. 10:00 AM)", text: $time)
+                    DatePicker("Time", selection: $date, displayedComponents: .hourAndMinute)
                 }
 
                 Section("Details") {
@@ -307,7 +304,6 @@ struct AddAppointmentView: View {
             title: title.trimmingCharacters(in: .whitespaces),
             doctorName: doctorName.trimmingCharacters(in: .whitespaces),
             date: date,
-            time: time.trimmingCharacters(in: .whitespaces),
             location: location.trimmingCharacters(in: .whitespaces),
             notes: notes.trimmingCharacters(in: .whitespaces)
         ))
@@ -325,7 +321,6 @@ struct EditAppointmentView: View {
     @State private var title: String
     @State private var doctorName: String
     @State private var date: Date
-    @State private var time: String
     @State private var location: String
     @State private var notes: String
 
@@ -334,7 +329,6 @@ struct EditAppointmentView: View {
         _title = State(initialValue: appointment.title)
         _doctorName = State(initialValue: appointment.doctorName)
         _date = State(initialValue: appointment.date)
-        _time = State(initialValue: appointment.time)
         _location = State(initialValue: appointment.location)
         _notes = State(initialValue: appointment.notes)
     }
@@ -357,7 +351,7 @@ struct EditAppointmentView: View {
                 }
                 Section("Date & Time") {
                     DatePicker("Date", selection: $date, displayedComponents: .date)
-                    TextField("Time (e.g. 10:00 AM)", text: $time)
+                    DatePicker("Time", selection: $date, displayedComponents: .hourAndMinute)
                 }
                 Section("Details") {
                     TextField("Location", text: $location)
@@ -383,7 +377,6 @@ struct EditAppointmentView: View {
         appointment.title = title.trimmingCharacters(in: .whitespaces)
         appointment.doctorName = doctorName.trimmingCharacters(in: .whitespaces)
         appointment.date = date
-        appointment.time = time.trimmingCharacters(in: .whitespaces)
         appointment.location = location.trimmingCharacters(in: .whitespaces)
         appointment.notes = notes.trimmingCharacters(in: .whitespaces)
         dismiss()

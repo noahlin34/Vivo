@@ -291,15 +291,13 @@ struct AppointmentCardRow: View {
                         .font(.system(size: 12))
                         .foregroundStyle(Color.mutedFg)
                         .lineLimit(1)
-                    if !appointment.time.isEmpty {
-                        HStack(spacing: 4) {
-                            Image(systemName: "clock")
-                                .font(.system(size: 10))
-                                .foregroundStyle(Color.mutedFg.opacity(0.6))
-                            Text(appointment.time)
-                                .font(.system(size: 11))
-                                .foregroundStyle(Color.mutedFg.opacity(0.8))
-                        }
+                    HStack(spacing: 4) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 10))
+                            .foregroundStyle(Color.mutedFg.opacity(0.6))
+                        Text(appointment.date.formatted(.dateTime.hour().minute()))
+                            .font(.system(size: 11))
+                            .foregroundStyle(Color.mutedFg.opacity(0.8))
                     }
                 }
 
