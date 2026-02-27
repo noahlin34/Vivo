@@ -5,6 +5,7 @@
 
 import SwiftUI
 import SwiftData
+import UserNotifications
 
 struct MedicationsView: View {
     @Environment(\.modelContext) private var modelContext
@@ -12,6 +13,7 @@ struct MedicationsView: View {
     @State private var showAdd = false
     @State private var selected: Medication? = nil
     @State private var searchText = ""
+    @State private var medicationToDelete: Medication? = nil
 
     private var filteredMedications: [Medication] {
         guard !searchText.isEmpty else { return medications }
@@ -64,9 +66,9 @@ struct MedicationsView: View {
                                 MedicationCardRow(medication: med)
                             }
                             .buttonStyle(.plain)
-                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button(role: .destructive) {
-                                    modelContext.delete(med)
+                                    medicationToDelete = med
                                 } label: {
                                     Label("Delete", systemImage: "trash")
                                 }
@@ -80,9 +82,26 @@ struct MedicationsView: View {
             }
         }
         .background(Color.bg)
+        .confirmationDialog(
+            "Remove \(medicationToDelete?.name ?? "Medication")?",
+            isPresented: Binding(get: { medicationToDelete != nil }, set: { if !$0 { medicationToDelete = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button("Remove", role: .destructive) {
+                if let med = medicationToDelete {
+                    MedicationNotifications.cancel(for: med)
+                    modelContext.delete(med)
+                    medicationToDelete = nil
+                }
+            }
+            Button("Cancel", role: .cancel) { medicationToDelete = nil }
+        } message: {
+            Text("This action cannot be undone.")
+        }
         .sheet(isPresented: $showAdd) { AddMedicationView() }
         .sheet(item: $selected) { med in
             MedicationDetailSheet(medication: med) {
+                MedicationNotifications.cancel(for: med)
                 modelContext.delete(med)
                 selected = nil
             }
@@ -300,14 +319,16 @@ struct AddMedicationView: View {
     }
 
     private func save() {
-        modelContext.insert(Medication(
+        let med = Medication(
             name: name.trimmingCharacters(in: .whitespaces),
             dosage: dosage.trimmingCharacters(in: .whitespaces),
             frequency: frequency,
             scheduledTime: scheduledTime,
             colorIndex: colorIndex,
             notes: notes.trimmingCharacters(in: .whitespaces)
-        ))
+        )
+        modelContext.insert(med)
+        MedicationNotifications.schedule(for: med)
         dismiss()
     }
 }
@@ -391,6 +412,51 @@ struct EditMedicationView: View {
         medication.scheduledTime = scheduledTime
         medication.colorIndex = colorIndex
         medication.notes = notes.trimmingCharacters(in: .whitespaces)
+        MedicationNotifications.schedule(for: medication)
         dismiss()
+    }
+}
+
+// MARK: - Notification Manager
+
+enum MedicationNotifications {
+    private static func baseId(for medication: Medication) -> String {
+        String(medication.createdAt.timeIntervalSince1970)
+    }
+
+    static func schedule(for medication: Medication) {
+        let center = UNUserNotificationCenter.current()
+        let base = baseId(for: medication)
+
+        center.removePendingNotificationRequests(withIdentifiers: ["\(base)-0", "\(base)-1", "\(base)-2"])
+        guard medication.frequency != "As needed" else { return }
+
+        let offsets: [Int]
+        switch medication.frequency {
+        case "Twice daily":       offsets = [0, 12]
+        case "Three times daily": offsets = [0, 8, 16]
+        default:                  offsets = [0]
+        }
+
+        for (i, offset) in offsets.enumerated() {
+            let fireDate = Calendar.current.date(byAdding: .hour, value: offset, to: medication.scheduledTime) ?? medication.scheduledTime
+            let components = Calendar.current.dateComponents([.hour, .minute], from: fireDate)
+
+            let content = UNMutableNotificationContent()
+            content.title = "Time to take \(medication.name)"
+            content.body = medication.dosage
+            content.sound = .default
+
+            let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
+            let request = UNNotificationRequest(identifier: "\(base)-\(i)", content: content, trigger: trigger)
+            center.add(request)
+        }
+    }
+
+    static func cancel(for medication: Medication) {
+        let base = baseId(for: medication)
+        UNUserNotificationCenter.current().removePendingNotificationRequests(
+            withIdentifiers: ["\(base)-0", "\(base)-1", "\(base)-2"]
+        )
     }
 }
