@@ -11,6 +11,15 @@ struct DoctorsView: View {
     @Query(sort: \Doctor.createdAt) private var doctors: [Doctor]
     @State private var showAdd = false
     @State private var selected: Doctor? = nil
+    @State private var searchText = ""
+
+    private var filteredDoctors: [Doctor] {
+        guard !searchText.isEmpty else { return doctors }
+        return doctors.filter {
+            $0.name.localizedCaseInsensitiveContains(searchText) ||
+            $0.specialty.localizedCaseInsensitiveContains(searchText)
+        }
+    }
 
     var body: some View {
         ScrollView {
@@ -32,16 +41,39 @@ struct DoctorsView: View {
                 .padding(.top, 56)
                 .padding(.bottom, 20)
 
+                // Search bar
+                HStack(spacing: 10) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 15))
+                        .foregroundStyle(Color.mutedFg.opacity(0.6))
+                    TextField("Search doctors...", text: $searchText)
+                        .font(.system(size: 14))
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 11)
+                .background(Color.cardBg)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .warmShadow()
+                .padding(.horizontal, 20)
+                .padding(.bottom, 14)
+
                 // Content
                 if doctors.isEmpty {
                     emptyState
                 } else {
                     VStack(spacing: 12) {
-                        ForEach(doctors) { doc in
+                        ForEach(filteredDoctors) { doc in
                             Button { selected = doc } label: {
                                 DoctorCardRow(doctor: doc)
                             }
                             .buttonStyle(.plain)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    modelContext.delete(doc)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
                         }
                     }
                     .padding(.horizontal, 20)
@@ -128,10 +160,25 @@ struct DoctorDetailSheet: View {
                 // Contact rows
                 VStack(spacing: 10) {
                     if !doctor.phone.isEmpty {
-                        contactRow(icon: "phone", iconColor: Color.primaryTeal, label: "Phone", value: doctor.phone)
+                        let digits = doctor.phone.filter { $0.isNumber || $0 == "+" }
+                        if let url = URL(string: "tel://\(digits)") {
+                            Link(destination: url) {
+                                contactRow(icon: "phone.fill", iconColor: Color.primaryTeal, label: "Phone", value: doctor.phone)
+                            }
+                            .foregroundStyle(Color.nearBlack)
+                        } else {
+                            contactRow(icon: "phone", iconColor: Color.primaryTeal, label: "Phone", value: doctor.phone)
+                        }
                     }
                     if !doctor.email.isEmpty {
-                        contactRow(icon: "envelope", iconColor: Color.cyanStart, label: "Email", value: doctor.email)
+                        if let url = URL(string: "mailto:\(doctor.email)") {
+                            Link(destination: url) {
+                                contactRow(icon: "envelope.fill", iconColor: Color.cyanStart, label: "Email", value: doctor.email)
+                            }
+                            .foregroundStyle(Color.nearBlack)
+                        } else {
+                            contactRow(icon: "envelope", iconColor: Color.cyanStart, label: "Email", value: doctor.email)
+                        }
                     }
                     if !doctor.address.isEmpty {
                         contactRow(icon: "mappin", iconColor: Color.amberStart, label: "Address", value: doctor.address)
