@@ -12,6 +12,7 @@ struct DoctorsView: View {
     @State private var showAdd = false
     @State private var selected: Doctor? = nil
     @State private var searchText = ""
+    @State private var doctorToDelete: Doctor? = nil
 
     private var filteredDoctors: [Doctor] {
         guard !searchText.isEmpty else { return doctors }
@@ -67,9 +68,9 @@ struct DoctorsView: View {
                                 DoctorCardRow(doctor: doc)
                             }
                             .buttonStyle(.plain)
-                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button(role: .destructive) {
-                                    modelContext.delete(doc)
+                                    doctorToDelete = doc
                                 } label: {
                                     Label("Delete", systemImage: "trash")
                                 }
@@ -83,6 +84,21 @@ struct DoctorsView: View {
             }
         }
         .background(Color.bg)
+        .confirmationDialog(
+            "Remove \(doctorToDelete?.name ?? "Doctor")?",
+            isPresented: Binding(get: { doctorToDelete != nil }, set: { if !$0 { doctorToDelete = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button("Remove", role: .destructive) {
+                if let doc = doctorToDelete {
+                    modelContext.delete(doc)
+                    doctorToDelete = nil
+                }
+            }
+            Button("Cancel", role: .cancel) { doctorToDelete = nil }
+        } message: {
+            Text("This action cannot be undone.")
+        }
         .sheet(isPresented: $showAdd) { AddDoctorView() }
         .sheet(item: $selected) { doc in
             DoctorDetailSheet(doctor: doc) {
