@@ -11,6 +11,12 @@ struct MedicationsView: View {
     @Query(sort: \Medication.scheduledTime) private var medications: [Medication]
     @State private var showAdd = false
     @State private var selected: Medication? = nil
+    @State private var searchText = ""
+
+    private var filteredMedications: [Medication] {
+        guard !searchText.isEmpty else { return medications }
+        return medications.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+    }
 
     var body: some View {
         ScrollView {
@@ -32,16 +38,39 @@ struct MedicationsView: View {
                 .padding(.top, 56)
                 .padding(.bottom, 20)
 
+                // Search bar
+                HStack(spacing: 10) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 15))
+                        .foregroundStyle(Color.mutedFg.opacity(0.6))
+                    TextField("Search medications...", text: $searchText)
+                        .font(.system(size: 14))
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 11)
+                .background(Color.cardBg)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .warmShadow()
+                .padding(.horizontal, 20)
+                .padding(.bottom, 14)
+
                 // Content
                 if medications.isEmpty {
                     emptyState
                 } else {
                     VStack(spacing: 12) {
-                        ForEach(medications) { med in
+                        ForEach(filteredMedications) { med in
                             Button { selected = med } label: {
                                 MedicationCardRow(medication: med)
                             }
                             .buttonStyle(.plain)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    modelContext.delete(med)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
                         }
                     }
                     .padding(.horizontal, 20)
