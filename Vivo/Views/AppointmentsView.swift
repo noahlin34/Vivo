@@ -123,6 +123,7 @@ struct AppointmentDetailSheet: View {
     let onDelete: () -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var showEdit = false
+    @State private var showLinkedDoctor = false
 
     var body: some View {
         NavigationStack {
@@ -131,7 +132,19 @@ struct AppointmentDetailSheet: View {
                     Text(appointment.title)
                         .font(.system(size: 22, weight: .medium))
                         .foregroundStyle(Color.nearBlack)
-                    if !appointment.doctorName.isEmpty {
+                    if let linkedDoctor = appointment.doctor {
+                        Button { showLinkedDoctor = true } label: {
+                            HStack(spacing: 4) {
+                                Text(linkedDoctor.name)
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(Color.primaryTeal)
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .foregroundStyle(Color.primaryTeal.opacity(0.5))
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    } else if !appointment.doctorName.isEmpty {
                         Text(appointment.doctorName)
                             .font(.system(size: 14))
                             .foregroundStyle(Color.primaryTeal)
@@ -201,6 +214,11 @@ struct AppointmentDetailSheet: View {
             }
             .sheet(isPresented: $showEdit) {
                 EditAppointmentView(appointment: appointment)
+            }
+            .sheet(isPresented: $showLinkedDoctor) {
+                if let doc = appointment.doctor {
+                    DoctorDetailSheet(doctor: doc) { }
+                }
             }
         }
         .presentationDetents([.medium])

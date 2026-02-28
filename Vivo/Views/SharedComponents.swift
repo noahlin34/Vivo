@@ -336,7 +336,7 @@ struct AppointmentCardRow: View {
                         .font(.system(size: 15))
                         .foregroundStyle(Color.nearBlack)
                         .lineLimit(1)
-                    Text(appointment.doctorName)
+                    Text(appointment.displayDoctorName)
                         .font(.system(size: 12))
                         .foregroundStyle(Color.mutedFg)
                         .lineLimit(1)
