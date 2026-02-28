@@ -14,6 +14,7 @@ final class Doctor {
     var email: String = ""
     var address: String = ""
     var colorIndex: Int = 0
+    @Relationship(deleteRule: .nullify, inverse: \Appointment.doctor) var appointments: [Appointment]? = nil
     var createdAt: Date = Date()
 
     init(name: String, specialty: String, phone: String = "", email: String = "", address: String = "", colorIndex: Int = 0) {
