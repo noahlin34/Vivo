@@ -321,14 +321,14 @@ struct HomeView: View {
                         let initial = doc.name.split(separator: " ").last?.first.map(String.init) ?? "D"
 
                         VStack(alignment: .leading, spacing: 10) {
-                            Text(initial)
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundStyle(.white)
-                                .frame(width: 44, height: 44)
-                                .background(
-                                    LinearGradient(colors: style.gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                            ZStack {
+                                LinearGradient(colors: style.gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
+                                Text(initial)
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundStyle(.white)
+                            }
+                            .frame(width: 44, height: 44)
+                            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
 
                             Text(doc.name)
                                 .font(.system(size: 14, weight: .medium))

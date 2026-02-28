@@ -267,14 +267,14 @@ struct DoctorCardRow: View {
 
         HStack(spacing: 14) {
             // Gradient avatar
-            Text(initial)
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: 48, height: 48)
-                .background(
-                    LinearGradient(colors: style.gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            ZStack {
+                LinearGradient(colors: style.gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
+                Text(initial)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
+            .frame(width: 48, height: 48)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(doctor.name)

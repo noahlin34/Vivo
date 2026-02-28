@@ -148,14 +148,14 @@ struct DoctorDetailSheet: View {
             VStack(spacing: 0) {
                 // Header
                 HStack(spacing: 16) {
-                    Text(initial)
-                        .font(.system(size: 24, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 64, height: 64)
-                        .background(
-                            LinearGradient(colors: style.gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    ZStack {
+                        LinearGradient(colors: style.gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
+                        Text(initial)
+                            .font(.system(size: 24, weight: .semibold))
+                            .foregroundStyle(.white)
+                    }
+                    .frame(width: 64, height: 64)
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
 
                     VStack(alignment: .leading, spacing: 6) {
                         Text(doctor.name)
