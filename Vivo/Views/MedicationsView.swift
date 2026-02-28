@@ -27,7 +27,18 @@ struct MedicationsView: View {
 
     private func toggleTaken(_ medication: Medication) {
         withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
-            medication.lastTakenDate = medication.isTakenToday ? nil : Date()
+            if medication.frequency == "As needed" {
+                // Always log another dose — no "done" state
+                medication.takenDates.append(Date())
+            } else if medication.isTakenToday {
+                // All doses done — tap resets so user can undo
+                medication.takenDates = medication.takenDates.filter {
+                    !Calendar.current.isDateInToday($0)
+                }
+            } else {
+                // Log one more dose toward the daily target
+                medication.takenDates.append(Date())
+            }
         }
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }

@@ -156,6 +156,32 @@ struct MedicationCardRow: View {
     private var color: Color { .medColor(medication.colorIndex) }
     private var isTaken: Bool { medication.isTakenToday }
 
+    @ViewBuilder
+    private var doseIndicator: some View {
+        let required = medication.dosesRequired
+        let taken = medication.dosesTakenToday
+        if required == 0 {
+            // "As needed" — always show a + to log a dose
+            Image(systemName: "plus.circle.fill")
+                .font(.system(size: 22))
+                .foregroundStyle(color.opacity(0.65))
+        } else if required == 1 {
+            // Once daily — same satisfying checkmark as before
+            Image(systemName: isTaken ? "checkmark.circle.fill" : "circle")
+                .font(.system(size: 22))
+                .foregroundStyle(isTaken ? color : Color.mutedFg.opacity(0.35))
+        } else {
+            // Twice / Three times daily — filled progress dots
+            HStack(spacing: 5) {
+                ForEach(0..<required, id: \.self) { i in
+                    Circle()
+                        .fill(i < taken ? color : Color.mutedFg.opacity(0.25))
+                        .frame(width: 9, height: 9)
+                }
+            }
+        }
+    }
+
     var body: some View {
         HStack(spacing: 0) {
             // Color stripe (6px — matches Figma w-1.5)
@@ -201,15 +227,13 @@ struct MedicationCardRow: View {
                 .background(Color.bg)
                 .clipShape(Capsule())
 
-                // Checkbox — only shown when onToggle is provided (MedicationsView)
+                // Dose indicator — only shown when onToggle is provided (MedicationsView)
                 if let toggle = onToggle {
                     Button(action: toggle) {
-                        Image(systemName: isTaken ? "checkmark.circle.fill" : "circle")
-                            .font(.system(size: 22))
-                            .foregroundStyle(isTaken ? color : Color.mutedFg.opacity(0.35))
+                        doseIndicator
                     }
                     .buttonStyle(.plain)
-                    .frame(width: 28, height: 28)
+                    .frame(height: 28)
                 }
             }
             .padding(.horizontal, 14)
