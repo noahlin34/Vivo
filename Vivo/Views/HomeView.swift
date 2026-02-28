@@ -43,6 +43,7 @@ struct HomeView: View {
         }
         .sheet(item: $selectedAppt) { appt in
             AppointmentDetailSheet(appointment: appt) {
+                AppointmentNotifications.cancel(for: appt)
                 modelContext.delete(appt)
                 selectedAppt = nil
             }

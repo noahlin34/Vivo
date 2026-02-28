@@ -5,6 +5,7 @@
 
 import SwiftUI
 import SwiftData
+import UserNotifications
 
 struct AppointmentsView: View {
     @Environment(\.modelContext) private var modelContext
@@ -86,6 +87,7 @@ struct AppointmentsView: View {
         .sheet(isPresented: $showAdd) { AddAppointmentView() }
         .sheet(item: $selected) { appt in
             AppointmentDetailSheet(appointment: appt) {
+                AppointmentNotifications.cancel(for: appt)
                 modelContext.delete(appt)
                 selected = nil
             }
@@ -328,6 +330,7 @@ struct AddAppointmentView: View {
         )
         appt.doctor = selectedDoctor
         modelContext.insert(appt)
+        AppointmentNotifications.schedule(for: appt)
         dismiss()
     }
 }
@@ -403,6 +406,63 @@ struct EditAppointmentView: View {
         appointment.date = date
         appointment.location = location.trimmingCharacters(in: .whitespaces)
         appointment.notes = notes.trimmingCharacters(in: .whitespaces)
+        AppointmentNotifications.schedule(for: appointment)
         dismiss()
+    }
+}
+
+// MARK: - Appointment Notifications
+
+enum AppointmentNotifications {
+    private static func baseId(for appointment: Appointment) -> String {
+        String(appointment.createdAt.timeIntervalSince1970)
+    }
+
+    static func schedule(for appointment: Appointment) {
+        let center = UNUserNotificationCenter.current()
+        let base = baseId(for: appointment)
+
+        // Cancel any existing notifications before rescheduling (handles edits)
+        center.removePendingNotificationRequests(withIdentifiers: ["\(base)-day", "\(base)-hour"])
+
+        let now = Date()
+        let doctorPart = appointment.displayDoctorName.isEmpty ? "" : " with \(appointment.displayDoctorName)"
+
+        // 1 day before
+        if let dayBefore = Calendar.current.date(byAdding: .day, value: -1, to: appointment.date),
+           dayBefore > now {
+            let content = UNMutableNotificationContent()
+            content.title = "Appointment tomorrow"
+            content.body = "\(appointment.title)\(doctorPart)"
+            content.sound = .default
+            let comps = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: dayBefore)
+            center.add(UNNotificationRequest(
+                identifier: "\(base)-day",
+                content: content,
+                trigger: UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
+            ))
+        }
+
+        // 1 hour before
+        if let hourBefore = Calendar.current.date(byAdding: .hour, value: -1, to: appointment.date),
+           hourBefore > now {
+            let content = UNMutableNotificationContent()
+            content.title = "Appointment in 1 hour"
+            content.body = "\(appointment.title)\(doctorPart)"
+            content.sound = .default
+            let comps = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: hourBefore)
+            center.add(UNNotificationRequest(
+                identifier: "\(base)-hour",
+                content: content,
+                trigger: UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
+            ))
+        }
+    }
+
+    static func cancel(for appointment: Appointment) {
+        let base = baseId(for: appointment)
+        UNUserNotificationCenter.current().removePendingNotificationRequests(
+            withIdentifiers: ["\(base)-day", "\(base)-hour"]
+        )
     }
 }
