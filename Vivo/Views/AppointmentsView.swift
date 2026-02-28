@@ -240,6 +240,7 @@ struct AddAppointmentView: View {
     @Query(sort: \Doctor.createdAt) private var doctors: [Doctor]
 
     @State private var title = ""
+    @State private var selectedDoctor: Doctor? = nil
     @State private var doctorName = ""
     @State private var date = Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: Date()) ?? Date()
     @State private var location = ""
@@ -265,10 +266,10 @@ struct AddAppointmentView: View {
                     if doctors.isEmpty {
                         TextField("Doctor Name", text: $doctorName)
                     } else {
-                        Picker("Doctor", selection: $doctorName) {
-                            Text("None").tag("")
+                        Picker("Doctor", selection: $selectedDoctor) {
+                            Text("None").tag(nil as Doctor?)
                             ForEach(doctors) { doc in
-                                Text(doc.name).tag(doc.name)
+                                Text(doc.name).tag(doc as Doctor?)
                             }
                         }
                     }
@@ -300,13 +301,15 @@ struct AddAppointmentView: View {
     }
 
     private func save() {
-        modelContext.insert(Appointment(
+        let appt = Appointment(
             title: title.trimmingCharacters(in: .whitespaces),
-            doctorName: doctorName.trimmingCharacters(in: .whitespaces),
+            doctorName: selectedDoctor?.name ?? doctorName.trimmingCharacters(in: .whitespaces),
             date: date,
             location: location.trimmingCharacters(in: .whitespaces),
             notes: notes.trimmingCharacters(in: .whitespaces)
-        ))
+        )
+        appt.doctor = selectedDoctor
+        modelContext.insert(appt)
         dismiss()
     }
 }
@@ -319,6 +322,7 @@ struct EditAppointmentView: View {
     @Query(sort: \Doctor.createdAt) private var doctors: [Doctor]
 
     @State private var title: String
+    @State private var selectedDoctor: Doctor?
     @State private var doctorName: String
     @State private var date: Date
     @State private var location: String
@@ -327,6 +331,7 @@ struct EditAppointmentView: View {
     init(appointment: Appointment) {
         self.appointment = appointment
         _title = State(initialValue: appointment.title)
+        _selectedDoctor = State(initialValue: appointment.doctor)
         _doctorName = State(initialValue: appointment.doctorName)
         _date = State(initialValue: appointment.date)
         _location = State(initialValue: appointment.location)
@@ -341,10 +346,10 @@ struct EditAppointmentView: View {
                     if doctors.isEmpty {
                         TextField("Doctor Name", text: $doctorName)
                     } else {
-                        Picker("Doctor", selection: $doctorName) {
-                            Text("None").tag("")
+                        Picker("Doctor", selection: $selectedDoctor) {
+                            Text("None").tag(nil as Doctor?)
                             ForEach(doctors) { doc in
-                                Text(doc.name).tag(doc.name)
+                                Text(doc.name).tag(doc as Doctor?)
                             }
                         }
                     }
@@ -375,7 +380,8 @@ struct EditAppointmentView: View {
 
     private func save() {
         appointment.title = title.trimmingCharacters(in: .whitespaces)
-        appointment.doctorName = doctorName.trimmingCharacters(in: .whitespaces)
+        appointment.doctorName = selectedDoctor?.name ?? doctorName.trimmingCharacters(in: .whitespaces)
+        appointment.doctor = selectedDoctor
         appointment.date = date
         appointment.location = location.trimmingCharacters(in: .whitespaces)
         appointment.notes = notes.trimmingCharacters(in: .whitespaces)
