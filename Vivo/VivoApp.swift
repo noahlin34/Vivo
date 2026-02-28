@@ -17,6 +17,8 @@ import UserNotifications
 
 @main
 struct VivoApp: App {
+    @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Medication.self,
@@ -45,10 +47,17 @@ struct VivoApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .onAppear {
-                    UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
-                }
+            if hasCompletedOnboarding {
+                ContentView()
+                    .onAppear {
+                        UNUserNotificationCenter.current()
+                            .requestAuthorization(options: [.alert, .sound]) { _, _ in }
+                    }
+                    .transition(.opacity)
+            } else {
+                OnboardingView()
+                    .transition(.opacity)
+            }
         }
         .modelContainer(sharedModelContainer)
     }
