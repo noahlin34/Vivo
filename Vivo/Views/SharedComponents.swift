@@ -161,10 +161,18 @@ struct MedicationCardRow: View {
         let required = medication.dosesRequired
         let taken = medication.dosesTakenToday
         if required == 0 {
-            // "As needed" — always show a + to log a dose
-            Image(systemName: "plus.circle.fill")
-                .font(.system(size: 22))
-                .foregroundStyle(color.opacity(0.65))
+            // "As needed" — show dose count when logged, always show + to log more
+            HStack(spacing: 5) {
+                if taken > 0 {
+                    Text("×\(taken)")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(color)
+                        .monospacedDigit()
+                }
+                Image(systemName: "plus.circle.fill")
+                    .font(.system(size: 22))
+                    .foregroundStyle(color.opacity(taken > 0 ? 1.0 : 0.65))
+            }
         } else if required == 1 {
             // Once daily — same satisfying checkmark as before
             Image(systemName: isTaken ? "checkmark.circle.fill" : "circle")
