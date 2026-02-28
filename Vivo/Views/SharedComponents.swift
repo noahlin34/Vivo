@@ -151,8 +151,10 @@ struct GradientDateBadge: View {
 
 struct MedicationCardRow: View {
     let medication: Medication
+    var onToggle: (() -> Void)? = nil
 
     private var color: Color { .medColor(medication.colorIndex) }
+    private var isTaken: Bool { medication.isTakenToday }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -164,18 +166,19 @@ struct MedicationCardRow: View {
                 .frame(width: 6)
 
             HStack(spacing: 14) {
-                // Pill icon
+                // Pill icon — dims when taken
                 Image(systemName: "pill.fill")
                     .font(.system(size: 20))
-                    .foregroundStyle(color)
+                    .foregroundStyle(color.opacity(isTaken ? 0.35 : 1.0))
                     .frame(width: 46, height: 46)
-                    .background(color.opacity(0.1))
+                    .background(color.opacity(isTaken ? 0.05 : 0.1))
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(medication.name)
                         .font(.system(size: 15))
                         .foregroundStyle(Color.nearBlack)
+                        .strikethrough(isTaken, color: Color.mutedFg)
                         .lineLimit(1)
                     Text("\(medication.dosage) · \(medication.frequency)")
                         .font(.system(size: 12))
@@ -197,6 +200,17 @@ struct MedicationCardRow: View {
                 .padding(.vertical, 6)
                 .background(Color.bg)
                 .clipShape(Capsule())
+
+                // Checkbox — only shown when onToggle is provided (MedicationsView)
+                if let toggle = onToggle {
+                    Button(action: toggle) {
+                        Image(systemName: isTaken ? "checkmark.circle.fill" : "circle")
+                            .font(.system(size: 22))
+                            .foregroundStyle(isTaken ? color : Color.mutedFg.opacity(0.35))
+                    }
+                    .buttonStyle(.plain)
+                    .frame(width: 28, height: 28)
+                }
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 14)
@@ -204,6 +218,7 @@ struct MedicationCardRow: View {
         .background(Color.cardBg)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .warmShadow()
+        .opacity(isTaken ? 0.75 : 1.0)
     }
 }
 
