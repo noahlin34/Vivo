@@ -229,6 +229,8 @@ struct MedicationCardRow: View {
                     Text(medication.scheduledTime, format: .dateTime.hour().minute())
                         .font(.system(size: 11))
                         .foregroundStyle(Color.mutedFg)
+                        .lineLimit(1)
+                        .fixedSize()
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
