@@ -16,8 +16,20 @@ struct MedicationsView: View {
     @State private var medicationToDelete: Medication? = nil
 
     private var filteredMedications: [Medication] {
-        guard !searchText.isEmpty else { return medications }
-        return medications.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+        let base = searchText.isEmpty
+            ? medications
+            : medications.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+        return base.sorted { lhs, rhs in
+            if lhs.isTakenToday != rhs.isTakenToday { return !lhs.isTakenToday }
+            return lhs.scheduledTime < rhs.scheduledTime
+        }
+    }
+
+    private func toggleTaken(_ medication: Medication) {
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+            medication.lastTakenDate = medication.isTakenToday ? nil : Date()
+        }
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
 
     var body: some View {
@@ -63,7 +75,7 @@ struct MedicationsView: View {
                     VStack(spacing: 12) {
                         ForEach(filteredMedications) { med in
                             Button { selected = med } label: {
-                                MedicationCardRow(medication: med)
+                                MedicationCardRow(medication: med, onToggle: { toggleTaken(med) })
                             }
                             .buttonStyle(.plain)
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -75,6 +87,7 @@ struct MedicationsView: View {
                             }
                         }
                     }
+                    .animation(.spring(response: 0.4, dampingFraction: 0.75), value: filteredMedications.map(\.isTakenToday))
                     .padding(.horizontal, 20)
                 }
 
