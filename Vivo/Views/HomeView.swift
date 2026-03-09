@@ -26,6 +26,23 @@ struct HomeView: View {
 
     private var nextAppointment: Appointment? { upcomingAppointments.first }
 
+    private var scheduledMeds: [Medication] {
+        medications.filter { $0.frequency != "As needed" }
+    }
+    private var todaysTakenCount: Int {
+        scheduledMeds.filter { $0.isTakenToday }.count
+    }
+    private var todaysTotalCount: Int { scheduledMeds.count }
+    private var todaysProgress: Double {
+        guard todaysTotalCount > 0 else { return 0 }
+        return Double(todaysTakenCount) / Double(todaysTotalCount)
+    }
+    private var progressLabel: String {
+        if todaysTotalCount == 0 { return "No meds scheduled" }
+        if todaysTakenCount == todaysTotalCount { return "All done for today!" }
+        return "\(todaysTakenCount) of \(todaysTotalCount) taken"
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
@@ -80,20 +97,17 @@ struct HomeView: View {
                     .foregroundStyle(.white.opacity(0.6))
                     .padding(.top, 2)
 
-                // Summary chips
-                HStack(spacing: 10) {
-                    heroChip(
-                        icon: "pill.fill",
-                        label: "Today's Meds",
-                        value: "\(medications.count) active"
-                    )
-                    heroChip(
-                        icon: "calendar",
-                        label: "Next Appt",
-                        value: nextAppointment.map { $0.date.formatted(.dateTime.month(.abbreviated).day()) } ?? "None"
-                    )
-                }
-                .padding(.top, 20)
+                // Medication progress card
+                medProgressCard
+                    .padding(.top, 20)
+
+                // Next appointment chip
+                heroChip(
+                    icon: "calendar",
+                    label: "Next Appointment",
+                    value: nextAppointment.map { $0.date.formatted(.dateTime.month(.wide).day()) } ?? "None scheduled"
+                )
+                .padding(.top, 10)
                 .padding(.bottom, 28)
             }
             .padding(.horizontal, 20)
@@ -107,6 +121,71 @@ struct HomeView: View {
             .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 24, bottomTrailingRadius: 24))
             .ignoresSafeArea(edges: .top)
         }
+    }
+
+    var medProgressCard: some View {
+        HStack(spacing: 16) {
+            // Circular progress ring
+            ZStack {
+                Circle()
+                    .stroke(.white.opacity(0.2), lineWidth: 5)
+                Circle()
+                    .trim(from: 0, to: CGFloat(todaysProgress))
+                    .stroke(.white, style: StrokeStyle(lineWidth: 5, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .animation(.spring(response: 0.6, dampingFraction: 0.8), value: todaysProgress)
+
+                if todaysTakenCount == todaysTotalCount && todaysTotalCount > 0 {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(.white)
+                } else {
+                    VStack(spacing: -1) {
+                        Text("\(todaysTakenCount)")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundStyle(.white)
+                        Text("/\(todaysTotalCount)")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.white.opacity(0.55))
+                    }
+                }
+            }
+            .frame(width: 58, height: 58)
+
+            // Labels + progress bar
+            VStack(alignment: .leading, spacing: 5) {
+                Text("Today's Medications")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.white.opacity(0.6))
+                Text(progressLabel)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(.white.opacity(0.2))
+                        .frame(height: 5)
+                    Capsule()
+                        .fill(.white)
+                        .frame(maxWidth: .infinity)
+                        .scaleEffect(x: CGFloat(todaysProgress), anchor: .leading)
+                        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: todaysProgress)
+                }
+            }
+
+            // Checkmark seal when complete
+            if todaysTakenCount == todaysTotalCount && todaysTotalCount > 0 {
+                Image(systemName: "checkmark.seal.fill")
+                    .font(.system(size: 24))
+                    .foregroundStyle(.white.opacity(0.85))
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(.white.opacity(0.15))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .frame(maxWidth: .infinity)
     }
 
     func heroChip(icon: String, label: String, value: String) -> some View {
@@ -218,7 +297,7 @@ struct HomeView: View {
                     .font(.system(size: 18, weight: .medium))
                     .foregroundStyle(Color.nearBlack)
                 Spacer()
-                Text("\(medications.count) total")
+                Text(todaysTotalCount > 0 ? "\(todaysTakenCount)/\(todaysTotalCount) taken" : "\(medications.count) active")
                     .font(.system(size: 12))
                     .foregroundStyle(Color.primaryTeal)
                     .padding(.horizontal, 10)
