@@ -15,6 +15,7 @@ final class Medication {
     var colorIndex: Int = 0
     var notes: String = ""
     var takenDates: [Date] = []
+    var pillCount: Int? = nil
     var createdAt: Date = Date()
 
     /// Number of doses required per day (0 = "As needed" — no target)
@@ -35,6 +36,18 @@ final class Medication {
     /// True only for scheduled meds where all required doses are logged
     var isTakenToday: Bool {
         dosesRequired > 0 && dosesTakenToday >= dosesRequired
+    }
+
+    /// Estimated days of supply remaining (nil if not tracking or as-needed)
+    var daysRemaining: Int? {
+        guard let count = pillCount, dosesRequired > 0 else { return nil }
+        return count / dosesRequired
+    }
+
+    /// True when supply is tracked and ≤ 7 days remain
+    var isLowSupply: Bool {
+        guard let days = daysRemaining else { return false }
+        return days <= 7
     }
 
     init(name: String, dosage: String, frequency: String, scheduledTime: Date, colorIndex: Int = 0, notes: String = "") {
