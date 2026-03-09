@@ -140,87 +140,149 @@ struct DoctorDetailSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showEdit = false
 
+    private var sortedAppointments: [Appointment] {
+        (doctor.appointments ?? []).sorted { $0.date < $1.date }
+    }
+    private var upcomingAppts: [Appointment] {
+        let today = Calendar.current.startOfDay(for: Date())
+        return sortedAppointments.filter { $0.date >= today }
+    }
+    private var pastAppts: [Appointment] {
+        let today = Calendar.current.startOfDay(for: Date())
+        return Array(sortedAppointments.filter { $0.date < today }.reversed())
+    }
+    private var hasAppointments: Bool { !(doctor.appointments ?? []).isEmpty }
+
     var body: some View {
         let style = SpecialtyStyle.forSpecialty(doctor.specialty)
         let initial = doctor.name.split(separator: " ").last?.first.map(String.init) ?? "D"
 
         return NavigationStack {
-            VStack(spacing: 0) {
-                // Header
-                HStack(spacing: 16) {
-                    ZStack {
-                        LinearGradient(colors: style.gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
-                        Text(initial)
-                            .font(.system(size: 24, weight: .semibold))
-                            .foregroundStyle(.white)
-                    }
-                    .frame(width: 64, height: 64)
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Header
+                    HStack(spacing: 16) {
+                        ZStack {
+                            LinearGradient(colors: style.gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
+                            Text(initial)
+                                .font(.system(size: 24, weight: .semibold))
+                                .foregroundStyle(.white)
+                        }
+                        .frame(width: 64, height: 64)
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
 
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(doctor.name)
-                            .font(.system(size: 22, weight: .medium))
-                            .foregroundStyle(Color.nearBlack)
-                        Text(doctor.specialty)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(style.color)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 4)
-                            .background(style.color.opacity(0.1))
-                            .clipShape(Capsule())
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(20)
-
-                // Contact rows
-                VStack(spacing: 10) {
-                    if !doctor.phone.isEmpty {
-                        let digits = doctor.phone.filter { $0.isNumber || $0 == "+" }
-                        if let url = URL(string: "tel://\(digits)") {
-                            Link(destination: url) {
-                                contactRow(icon: "phone.fill", iconColor: Color.primaryTeal, label: "Phone", value: doctor.phone)
-                            }
-                            .foregroundStyle(Color.nearBlack)
-                        } else {
-                            contactRow(icon: "phone", iconColor: Color.primaryTeal, label: "Phone", value: doctor.phone)
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(doctor.name)
+                                .font(.system(size: 22, weight: .medium))
+                                .foregroundStyle(Color.nearBlack)
+                            Text(doctor.specialty)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(style.color)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 4)
+                                .background(style.color.opacity(0.1))
+                                .clipShape(Capsule())
                         }
                     }
-                    if !doctor.email.isEmpty {
-                        if let url = URL(string: "mailto:\(doctor.email)") {
-                            Link(destination: url) {
-                                contactRow(icon: "envelope.fill", iconColor: Color.cyanStart, label: "Email", value: doctor.email)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(20)
+
+                    // Contact rows
+                    VStack(spacing: 10) {
+                        if !doctor.phone.isEmpty {
+                            let digits = doctor.phone.filter { $0.isNumber || $0 == "+" }
+                            if let url = URL(string: "tel://\(digits)") {
+                                Link(destination: url) {
+                                    contactRow(icon: "phone.fill", iconColor: Color.primaryTeal, label: "Phone", value: doctor.phone)
+                                }
+                                .foregroundStyle(Color.nearBlack)
+                            } else {
+                                contactRow(icon: "phone", iconColor: Color.primaryTeal, label: "Phone", value: doctor.phone)
                             }
-                            .foregroundStyle(Color.nearBlack)
-                        } else {
-                            contactRow(icon: "envelope", iconColor: Color.cyanStart, label: "Email", value: doctor.email)
+                        }
+                        if !doctor.email.isEmpty {
+                            if let url = URL(string: "mailto:\(doctor.email)") {
+                                Link(destination: url) {
+                                    contactRow(icon: "envelope.fill", iconColor: Color.cyanStart, label: "Email", value: doctor.email)
+                                }
+                                .foregroundStyle(Color.nearBlack)
+                            } else {
+                                contactRow(icon: "envelope", iconColor: Color.cyanStart, label: "Email", value: doctor.email)
+                            }
+                        }
+                        if !doctor.address.isEmpty {
+                            contactRow(icon: "mappin", iconColor: Color.amberStart, label: "Address", value: doctor.address)
                         }
                     }
-                    if !doctor.address.isEmpty {
-                        contactRow(icon: "mappin", iconColor: Color.amberStart, label: "Address", value: doctor.address)
-                    }
-                }
-                .padding(.horizontal, 20)
+                    .padding(.horizontal, 20)
 
-                Spacer()
+                    // Appointments history
+                    if hasAppointments {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Text("Appointments")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundStyle(Color.nearBlack)
+                                Spacer()
+                                Text("\((doctor.appointments ?? []).count) total")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(style.color)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 4)
+                                    .background(style.color.opacity(0.1))
+                                    .clipShape(Capsule())
+                            }
+                            .padding(.horizontal, 20)
 
-                Button {
-                    onDelete()
-                    dismiss()
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "trash")
-                        Text("Remove Doctor")
+                            if !upcomingAppts.isEmpty {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    SectionLabel(title: "Upcoming", dotColor: Color.cyanStart)
+                                        .padding(.horizontal, 20)
+                                    VStack(spacing: 8) {
+                                        ForEach(upcomingAppts) { appt in
+                                            apptRow(appt, isPast: false)
+                                        }
+                                    }
+                                    .padding(.horizontal, 20)
+                                }
+                            }
+
+                            if !pastAppts.isEmpty {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    SectionLabel(title: "Past", dotColor: Color.mutedFg)
+                                        .padding(.horizontal, 20)
+                                    VStack(spacing: 8) {
+                                        ForEach(pastAppts) { appt in
+                                            apptRow(appt, isPast: true)
+                                        }
+                                    }
+                                    .padding(.horizontal, 20)
+                                }
+                            }
+                        }
+                        .padding(.top, 20)
                     }
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(Color(hex: "DC2626"))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 52)
-                    .background(Color(hex: "DC2626").opacity(0.08))
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                    // Delete button
+                    Button {
+                        onDelete()
+                        dismiss()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "trash")
+                            Text("Remove Doctor")
+                        }
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(Color(hex: "DC2626"))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(Color(hex: "DC2626").opacity(0.08))
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 24)
+                    .padding(.bottom, 32)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 24)
             }
             .background(Color.cardBg)
             .navigationTitle("Doctor Details")
@@ -237,8 +299,50 @@ struct DoctorDetailSheet: View {
                 EditDoctorView(doctor: doctor)
             }
         }
-        .presentationDetents([.medium])
+        .presentationDetents([.medium, .large])
         .presentationCornerRadius(24)
+    }
+
+    func apptRow(_ appt: Appointment, isPast: Bool) -> some View {
+        HStack(spacing: 12) {
+            VStack(spacing: 1) {
+                Text(appt.date.formatted(.dateTime.month(.abbreviated)).uppercased())
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(isPast ? Color.mutedFg : .white.opacity(0.85))
+                Text(appt.date.formatted(.dateTime.day()))
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(isPast ? Color.mutedFg : .white)
+            }
+            .frame(width: 40, height: 40)
+            .background {
+                if isPast {
+                    Color.mutedBg
+                } else {
+                    LinearGradient(colors: [Color.cyanStart, Color.cyanEnd], startPoint: .topLeading, endPoint: .bottomTrailing)
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(appt.title)
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color.nearBlack)
+                    .lineLimit(1)
+                Text(appt.date.formatted(.dateTime.month(.wide).day().year()) + " · " + appt.date.formatted(.dateTime.hour().minute()))
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color.mutedFg)
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(Color.mutedFg.opacity(0.3))
+        }
+        .padding(12)
+        .background(Color.bg)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .opacity(isPast ? 0.65 : 1.0)
     }
 
     func contactRow(icon: String, iconColor: Color, label: String, value: String) -> some View {
