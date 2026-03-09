@@ -217,6 +217,16 @@ struct MedicationCardRow: View {
                     Text("\(medication.dosage) · \(medication.frequency)")
                         .font(.system(size: 12))
                         .foregroundStyle(Color.mutedFg)
+                    if medication.isLowSupply, let days = medication.daysRemaining {
+                        HStack(spacing: 3) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 9))
+                            Text(days == 0 ? "Refill needed" : "~\(days)d left")
+                                .font(.system(size: 10, weight: .medium))
+                        }
+                        .foregroundStyle(days <= 3 ? Color(hex: "DC2626") : Color.amberStart)
+                        .padding(.top, 1)
+                    }
                 }
 
                 Spacer()

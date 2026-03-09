@@ -28,16 +28,23 @@ struct MedicationsView: View {
     private func toggleTaken(_ medication: Medication) {
         withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
             if medication.frequency == "As needed" {
-                // Always log another dose — no "done" state
                 medication.takenDates.append(Date())
+                if let count = medication.pillCount, count > 0 {
+                    medication.pillCount = count - 1
+                }
             } else if medication.isTakenToday {
-                // All doses done — tap resets so user can undo
+                let todayCount = medication.dosesTakenToday
                 medication.takenDates = medication.takenDates.filter {
                     !Calendar.current.isDateInToday($0)
                 }
+                if let count = medication.pillCount {
+                    medication.pillCount = count + todayCount
+                }
             } else {
-                // Log one more dose toward the daily target
                 medication.takenDates.append(Date())
+                if let count = medication.pillCount, count > 0 {
+                    medication.pillCount = count - 1
+                }
             }
         }
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -203,6 +210,32 @@ struct MedicationDetailSheet: View {
                         Divider().padding(.leading, 16)
                         detailRow(label: "Notes", value: medication.notes)
                     }
+                    if let count = medication.pillCount {
+                        Divider().padding(.leading, 16)
+                        let supplyText: String = {
+                            if count == 0 { return "Refill needed" }
+                            if let days = medication.daysRemaining { return "\(count) pills · ~\(days)d" }
+                            return "\(count) pills"
+                        }()
+                        HStack {
+                            Text("Supply")
+                                .font(.system(size: 12))
+                                .foregroundStyle(Color.mutedFg)
+                            Spacer()
+                            HStack(spacing: 5) {
+                                if medication.isLowSupply {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(Color.amberStart)
+                                }
+                                Text(supplyText)
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(medication.isLowSupply ? Color.amberStart : Color.nearBlack)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 14)
+                    }
                 }
                 .background(Color.bg)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -276,6 +309,8 @@ struct AddMedicationView: View {
     @State private var scheduledTime = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
     @State private var notes = ""
     @State private var colorIndex = 0
+    @State private var trackPillCount = false
+    @State private var pillCount = 30
 
     private let frequencies = ["Once daily", "Twice daily", "Three times daily", "As needed"]
     private let colorNames = ["Teal", "Green", "Amber", "Purple", "Cyan", "Rose"]
@@ -326,6 +361,13 @@ struct AddMedicationView: View {
                     .pickerStyle(.inline)
                     .labelsHidden()
                 }
+
+                Section("Refill Tracking") {
+                    Toggle("Track pill supply", isOn: $trackPillCount)
+                    if trackPillCount {
+                        Stepper("Supply: \(pillCount) pill\(pillCount == 1 ? "" : "s")", value: $pillCount, in: 0...999)
+                    }
+                }
             }
             .navigationTitle("Add Medication")
             .navigationBarTitleDisplayMode(.inline)
@@ -351,6 +393,7 @@ struct AddMedicationView: View {
             colorIndex: colorIndex,
             notes: notes.trimmingCharacters(in: .whitespaces)
         )
+        med.pillCount = trackPillCount ? pillCount : nil
         modelContext.insert(med)
         MedicationNotifications.schedule(for: med)
         dismiss()
@@ -369,6 +412,8 @@ struct EditMedicationView: View {
     @State private var scheduledTime: Date
     @State private var colorIndex: Int
     @State private var notes: String
+    @State private var trackPillCount: Bool
+    @State private var pillCount: Int
 
     private let frequencies = ["Once daily", "Twice daily", "Three times daily", "As needed"]
     private let colorNames = ["Teal", "Green", "Amber", "Purple", "Cyan", "Rose"]
@@ -382,6 +427,8 @@ struct EditMedicationView: View {
         _scheduledTime = State(initialValue: medication.scheduledTime)
         _colorIndex = State(initialValue: medication.colorIndex)
         _notes = State(initialValue: medication.notes)
+        _trackPillCount = State(initialValue: medication.pillCount != nil)
+        _pillCount = State(initialValue: medication.pillCount ?? 30)
     }
 
     var body: some View {
@@ -413,6 +460,13 @@ struct EditMedicationView: View {
                     .pickerStyle(.inline)
                     .labelsHidden()
                 }
+
+                Section("Refill Tracking") {
+                    Toggle("Track pill supply", isOn: $trackPillCount)
+                    if trackPillCount {
+                        Stepper("Supply: \(pillCount) pill\(pillCount == 1 ? "" : "s")", value: $pillCount, in: 0...999)
+                    }
+                }
             }
             .navigationTitle("Edit Medication")
             .navigationBarTitleDisplayMode(.inline)
@@ -436,6 +490,7 @@ struct EditMedicationView: View {
         medication.scheduledTime = scheduledTime
         medication.colorIndex = colorIndex
         medication.notes = notes.trimmingCharacters(in: .whitespaces)
+        medication.pillCount = trackPillCount ? pillCount : nil
         MedicationNotifications.schedule(for: medication)
         dismiss()
     }
