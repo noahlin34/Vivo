@@ -15,13 +15,25 @@ struct MedicationsView: View {
     @State private var searchText = ""
     @State private var medicationToDelete: Medication? = nil
 
-    private var filteredMedications: [Medication] {
+    // Flat sorted list used by the current body (will be removed in next commit)
+    private var filteredMedications: [Medication] { groupedMedications.flatMap(\.1) }
+
+    private var groupedMedications: [(TimeOfDay, [Medication])] {
         let base = searchText.isEmpty
-            ? medications
+            ? Array(medications)
             : medications.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
-        return base.sorted { lhs, rhs in
-            if lhs.isTakenToday != rhs.isTakenToday { return !lhs.isTakenToday }
-            return lhs.scheduledTime < rhs.scheduledTime
+        var groups: [TimeOfDay: [Medication]] = [:]
+        for med in base {
+            let tod = TimeOfDay.from(date: med.scheduledTime)
+            groups[tod, default: []].append(med)
+        }
+        return TimeOfDay.allCases.compactMap { tod in
+            guard let meds = groups[tod] else { return nil }
+            let sorted = meds.sorted { lhs, rhs in
+                if lhs.isTakenToday != rhs.isTakenToday { return !lhs.isTakenToday }
+                return lhs.scheduledTime < rhs.scheduledTime
+            }
+            return (tod, sorted)
         }
     }
 
@@ -493,6 +505,43 @@ struct EditMedicationView: View {
         medication.pillCount = trackPillCount ? pillCount : nil
         MedicationNotifications.schedule(for: medication)
         dismiss()
+    }
+}
+
+// MARK: - Time of Day
+
+enum TimeOfDay: String, CaseIterable {
+    case morning   = "Morning"
+    case afternoon = "Afternoon"
+    case evening   = "Evening"
+    case night     = "Night"
+
+    static func from(date: Date) -> TimeOfDay {
+        let hour = Calendar.current.component(.hour, from: date)
+        switch hour {
+        case 5..<12: return .morning
+        case 12..<17: return .afternoon
+        case 17..<21: return .evening
+        default:     return .night
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .morning:   return "sunrise.fill"
+        case .afternoon: return "sun.max.fill"
+        case .evening:   return "sunset.fill"
+        case .night:     return "moon.stars.fill"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .morning:   return Color.amberStart
+        case .afternoon: return Color.cyanStart
+        case .evening:   return Color.purpleStart
+        case .night:     return Color(hex: "6366F1")
+        }
     }
 }
 
