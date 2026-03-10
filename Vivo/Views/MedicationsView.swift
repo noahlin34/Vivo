@@ -15,9 +15,6 @@ struct MedicationsView: View {
     @State private var searchText = ""
     @State private var medicationToDelete: Medication? = nil
 
-    // Flat sorted list used by the current body (will be removed in next commit)
-    private var filteredMedications: [Medication] { groupedMedications.flatMap(\.1) }
-
     private var groupedMedications: [(TimeOfDay, [Medication])] {
         let base = searchText.isEmpty
             ? Array(medications)
@@ -101,23 +98,57 @@ struct MedicationsView: View {
                 // Content
                 if medications.isEmpty {
                     emptyState
+                } else if groupedMedications.isEmpty {
+                    Text("No results for \"\(searchText)\"")
+                        .font(.system(size: 15))
+                        .foregroundStyle(Color.mutedFg)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(24)
+                        .background(Color.cardBg)
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .warmShadow()
+                        .padding(.horizontal, 20)
                 } else {
-                    VStack(spacing: 12) {
-                        ForEach(filteredMedications) { med in
-                            Button { selected = med } label: {
-                                MedicationCardRow(medication: med, onToggle: { toggleTaken(med) })
-                            }
-                            .buttonStyle(.plain)
-                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                Button(role: .destructive) {
-                                    medicationToDelete = med
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
+                    VStack(spacing: 24) {
+                        ForEach(groupedMedications, id: \.0.rawValue) { tod, meds in
+                            VStack(alignment: .leading, spacing: 10) {
+                                // Time-of-day section header
+                                HStack(spacing: 7) {
+                                    Image(systemName: tod.icon)
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(tod.color)
+                                    Text(tod.rawValue.uppercased())
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundStyle(Color.mutedFg)
+                                        .tracking(0.5)
+                                    Spacer()
+                                    let remaining = meds.filter { !$0.isTakenToday && $0.dosesRequired > 0 }.count
+                                    if remaining > 0 {
+                                        Text("\(remaining) remaining")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(Color.mutedFg.opacity(0.55))
+                                    }
                                 }
+
+                                VStack(spacing: 10) {
+                                    ForEach(meds) { med in
+                                        Button { selected = med } label: {
+                                            MedicationCardRow(medication: med, onToggle: { toggleTaken(med) })
+                                        }
+                                        .buttonStyle(.plain)
+                                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                            Button(role: .destructive) {
+                                                medicationToDelete = med
+                                            } label: {
+                                                Label("Delete", systemImage: "trash")
+                                            }
+                                        }
+                                    }
+                                }
+                                .animation(.spring(response: 0.4, dampingFraction: 0.75), value: meds.map(\.isTakenToday))
                             }
                         }
                     }
-                    .animation(.spring(response: 0.4, dampingFraction: 0.75), value: filteredMedications.map(\.isTakenToday))
                     .padding(.horizontal, 20)
                 }
 
