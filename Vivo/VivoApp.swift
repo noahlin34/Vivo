@@ -25,6 +25,7 @@ struct VivoApp: App {
             Doctor.self,
             Appointment.self,
             HealthNote.self,
+            VitalRecord.self,
         ])
         // CloudKit sync only works on a physical device with the iCloud container
         // configured in the Apple Developer Portal. Disable it on the simulator
