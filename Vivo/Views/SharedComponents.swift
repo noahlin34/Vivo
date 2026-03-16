@@ -231,21 +231,23 @@ struct MedicationCardRow: View {
 
                 Spacer()
 
-                // Time badge
-                HStack(spacing: 4) {
-                    Image(systemName: "clock")
-                        .font(.system(size: 10))
-                        .foregroundStyle(Color.mutedFg)
-                    Text(medication.scheduledTime, format: .dateTime.hour().minute())
-                        .font(.system(size: 11))
-                        .foregroundStyle(Color.mutedFg)
-                        .lineLimit(1)
-                        .fixedSize()
+                // Time badge (hidden for "As needed" meds)
+                if medication.frequency != "As needed" {
+                    HStack(spacing: 4) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 10))
+                            .foregroundStyle(Color.mutedFg)
+                        Text(medication.scheduledTime, format: .dateTime.hour().minute())
+                            .font(.system(size: 11))
+                            .foregroundStyle(Color.mutedFg)
+                            .lineLimit(1)
+                            .fixedSize()
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.bg)
+                    .clipShape(Capsule())
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(Color.bg)
-                .clipShape(Capsule())
 
                 // Dose indicator — only shown when onToggle is provided (MedicationsView)
                 if let toggle = onToggle {
