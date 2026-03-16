@@ -19,45 +19,13 @@ struct ContentView: View {
         TabView(selection: $selectedTab) {
             HomeView(selectedTab: $selectedTab).tag(0)
             MedicationsView().tag(1)
-            DoctorsView().tag(2)
-            AppointmentsView().tag(3)
-            VitalsView().tag(4)
-            NotesView().tag(5)
+            CareView().tag(2)
+            VitalsView().tag(3)
+            NotesView().tag(4)
         }
-        .background(MoreNavBarHider())
         .tint(Color.primaryTeal)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             CustomTabBar(selectedTab: $selectedTab)
-        }
-    }
-}
-
-// MARK: - Hide "More" Navigation Bar
-
-/// With 6+ tabs, UIKit's UITabBarController creates a "More" navigation
-/// controller for overflow tabs, producing a back button even though the
-/// system tab bar is hidden. This walks the responder chain to find the
-/// tab bar controller and hides that navigation bar directly.
-private struct MoreNavBarHider: UIViewRepresentable {
-    func makeUIView(context: Context) -> UIView {
-        let view = UIView(frame: .zero)
-        view.isUserInteractionEnabled = false
-        DispatchQueue.main.async { hideMoreBar(from: view) }
-        return view
-    }
-
-    func updateUIView(_ uiView: UIView, context: Context) {
-        DispatchQueue.main.async { hideMoreBar(from: uiView) }
-    }
-
-    private func hideMoreBar(from view: UIView) {
-        var responder: UIResponder? = view
-        while let next = responder?.next {
-            if let tabController = next as? UITabBarController {
-                tabController.moreNavigationController.isNavigationBarHidden = true
-                return
-            }
-            responder = next
         }
     }
 }
@@ -72,12 +40,11 @@ private struct TabItemDef {
 }
 
 private let tabItems: [TabItemDef] = [
-    .init(icon: "house",             activeIcon: "house.fill",         label: "Home",    color: .primaryTeal),
-    .init(icon: "pill",              activeIcon: "pill.fill",          label: "Meds",    color: .tealStart),
-    .init(icon: "stethoscope",       activeIcon: "stethoscope",        label: "Doctors", color: .amberStart),
-    .init(icon: "calendar",          activeIcon: "calendar",           label: "Appts",   color: .cyanStart),
-    .init(icon: "waveform.path.ecg", activeIcon: "waveform.path.ecg",  label: "Vitals",  color: .roseStart),
-    .init(icon: "note.text",         activeIcon: "note.text",          label: "Notes",   color: .purpleStart),
+    .init(icon: "house",             activeIcon: "house.fill",         label: "Home",   color: .primaryTeal),
+    .init(icon: "pill",              activeIcon: "pill.fill",          label: "Meds",   color: .tealStart),
+    .init(icon: "stethoscope",       activeIcon: "stethoscope",        label: "Care",   color: .amberStart),
+    .init(icon: "waveform.path.ecg", activeIcon: "waveform.path.ecg",  label: "Vitals", color: .roseStart),
+    .init(icon: "note.text",         activeIcon: "note.text",          label: "Notes",  color: .purpleStart),
 ]
 
 struct CustomTabBar: View {
