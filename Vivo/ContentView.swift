@@ -94,30 +94,26 @@ struct CustomTabBar: View {
             selectedTab = index
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
         } label: {
-            VStack(spacing: 2) {
+            VStack(spacing: 3) {
                 ZStack {
                     // Active glow background
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .fill(Color(hex: "0D7C66").opacity(isActive ? 0.1 : 0))
-                        .frame(width: 40, height: 36)
+                        .frame(width: 36, height: 32)
 
                     Image(systemName: isActive ? item.activeIcon : item.icon)
-                        .font(.system(size: 22, weight: isActive ? .medium : .light))
+                        .font(.system(size: 18, weight: isActive ? .medium : .light))
                         .foregroundStyle(isActive ? Color(hex: "0D7C66") : Color(hex: "8C8279"))
                 }
-                .frame(width: 44, height: 36)
-                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: selectedTab)
+                .frame(width: 38, height: 32)
 
-                Text(item.label)
-                    .font(.system(size: 10))
-                    .foregroundStyle(isActive ? Color(hex: "0D7C66") : Color(hex: "8C8279"))
-
-                // Active dot
-                Circle()
-                    .fill(isActive ? Color(hex: "0D7C66") : Color.clear)
-                    .frame(width: 4, height: 4)
-                    .padding(.top, 2)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: selectedTab)
+                // Label only on active tab
+                if isActive {
+                    Text(item.label)
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundStyle(Color(hex: "0D7C66"))
+                        .transition(.opacity.combined(with: .scale(scale: 0.8)))
+                }
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 2)
