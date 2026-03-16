@@ -50,6 +50,8 @@ Vivo/
 │   ├── Appointment.swift
 │   ├── HealthNote.swift
 │   └── VitalRecord.swift
+├── Services/
+│   └── HealthKitService.swift  # Read-only HealthKit import
 └── Views/
     ├── SharedComponents.swift   # Design tokens, shared views, helpers
     ├── OnboardingView.swift     # 4-page swipeable onboarding flow
@@ -110,8 +112,10 @@ Categories: "Vitals", "Medications", "Lifestyle", "Questions", "Symptoms", "Gene
 
 ```swift
 type(String), value(Double), secondaryValue(Double?), unit(String),
-notes(String), recordedAt(Date), createdAt
+notes(String), source(String, default "manual"), recordedAt(Date), createdAt
 ```
+
+`source` field: `"manual"` (default, user-entered) or `"healthkit"` (imported from Apple Health). HealthKit records are read-only in the UI (no Edit/Delete).
 
 `VitalType` enum (not stored — helper): `bloodPressure`, `weight`, `heartRate`, `bloodSugar` with `icon`, `unit`, `hasDualValue`, `formatValue()`, `color`/`gradient`. Blood Pressure uses `secondaryValue` for diastolic.
 
@@ -120,6 +124,19 @@ notes(String), recordedAt(Date), createdAt
 Sync is configured with `.private("iCloud.com.noahlin.Vivo")`. Testing sync requires a physical device signed into iCloud with the container created in the Apple Developer Portal.
 
 **Simulator**: CloudKit is skipped on simulator via `#if targetEnvironment(simulator)` — uses local-only SwiftData storage.
+
+### HealthKit Integration
+
+Read-only, on-demand import of vitals from Apple Health.
+
+- **Service**: `HealthKitService` (`Vivo/Services/HealthKitService.swift`) — `@Observable` class
+- **Supported types**: Blood Pressure (via `HKCorrelationQuery`), Weight (lbs), Heart Rate (bpm), Blood Sugar (mg/dL)
+- **Flow**: user taps heart button in VitalsView → authorize → fetch last 30 days → dedup → insert with `source: "healthkit"`
+- **Dedup strategy**: skip import if a VitalRecord with same type exists within 60 seconds of the HealthKit sample date
+- **Simulator-safe**: `isAvailable` returns false via `#if targetEnvironment(simulator)`, import button hidden
+- **Read-only**: HealthKit records show "Source: Apple Health" in detail sheet, Edit/Delete buttons hidden
+- **No writes**: Vivo never writes to HealthKit; manual entries stay in SwiftData only
+- **No background sync**: no `HKObserverQuery` — import is user-initiated only
 
 ## Notification Systems
 
@@ -418,10 +435,13 @@ SwiftData `@Model` objects are reference types with `@Observable`. Mutating thei
 
 **Vivo.entitlements**:
 - `aps-environment`: development (push notifications)
+- `com.apple.developer.healthkit`: true (HealthKit read access)
+- `com.apple.developer.healthkit.access`: empty array (no specific clinical types)
 - `com.apple.developer.icloud-container-identifiers`: `iCloud.com.noahlin.Vivo`
 - `com.apple.developer.icloud-services`: CloudKit
 
 **Info.plist**:
+- `NSHealthShareUsageDescription`: read-only health data access for vitals import
 - `UIBackgroundModes`: `remote-notification` (for CloudKit silent push sync)
 
 **Assets**: AccentColor + AppIcon in asset catalog. All colors defined in code via `Color(hex:)`, not asset colors.
