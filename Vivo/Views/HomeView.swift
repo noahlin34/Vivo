@@ -21,9 +21,11 @@ struct HomeView: View {
     @State private var selectedDoctor: Doctor? = nil
     @State private var selectedNote: HealthNote? = nil
 
-    private var upcomingAppointments: [Appointment] {
+    private var allUpcomingAppointments: [Appointment] {
         appointments.filter { $0.date >= Calendar.current.startOfDay(for: Date()) }
-            .prefix(3).map { $0 }
+    }
+    private var upcomingAppointments: [Appointment] {
+        allUpcomingAppointments.prefix(3).map { $0 }
     }
 
     private var nextAppointment: Appointment? { upcomingAppointments.first }
@@ -311,13 +313,28 @@ struct HomeView: View {
                     .font(.system(size: 18, weight: .medium))
                     .foregroundStyle(Color.nearBlack)
                 Spacer()
-                Text(todaysTotalCount > 0 ? "\(todaysTakenCount)/\(todaysTotalCount) taken" : "\(medications.count) active")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Color.primaryTeal)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(Color.primaryTeal.opacity(0.08))
-                    .clipShape(Capsule())
+                if medications.count > 3 {
+                    Button {
+                        selectedTab = 1
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    } label: {
+                        HStack(spacing: 3) {
+                            Text("See all")
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 10, weight: .semibold))
+                        }
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.primaryTeal)
+                    }
+                } else {
+                    Text(todaysTotalCount > 0 ? "\(todaysTakenCount)/\(todaysTotalCount) taken" : "\(medications.count) active")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.primaryTeal)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Color.primaryTeal.opacity(0.08))
+                        .clipShape(Capsule())
+                }
             }
             .padding(.horizontal, 20)
 
@@ -354,13 +371,28 @@ struct HomeView: View {
                     .font(.system(size: 18, weight: .medium))
                     .foregroundStyle(Color.nearBlack)
                 Spacer()
-                Text("\(upcomingAppointments.count) appts")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Color.amberStart)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(Color.amberStart.opacity(0.08))
-                    .clipShape(Capsule())
+                if allUpcomingAppointments.count > 3 {
+                    Button {
+                        selectedTab = 3
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    } label: {
+                        HStack(spacing: 3) {
+                            Text("See all")
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 10, weight: .semibold))
+                        }
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.cyanStart)
+                    }
+                } else {
+                    Text("\(allUpcomingAppointments.count) appts")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.amberStart)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Color.amberStart.opacity(0.08))
+                        .clipShape(Capsule())
+                }
             }
             .padding(.horizontal, 20)
 
