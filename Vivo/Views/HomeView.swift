@@ -18,6 +18,8 @@ struct HomeView: View {
     @State private var topSafeArea: CGFloat = 0
     @State private var selectedMed: Medication? = nil
     @State private var selectedAppt: Appointment? = nil
+    @State private var selectedDoctor: Doctor? = nil
+    @State private var selectedNote: HealthNote? = nil
 
     private var upcomingAppointments: [Appointment] {
         appointments.filter { $0.date >= Calendar.current.startOfDay(for: Date()) }
@@ -63,6 +65,18 @@ struct HomeView: View {
                 AppointmentNotifications.cancel(for: appt)
                 modelContext.delete(appt)
                 selectedAppt = nil
+            }
+        }
+        .sheet(item: $selectedDoctor) { doc in
+            DoctorDetailSheet(doctor: doc) {
+                modelContext.delete(doc)
+                selectedDoctor = nil
+            }
+        }
+        .sheet(item: $selectedNote) { note in
+            NoteDetailSheet(note: note) {
+                modelContext.delete(note)
+                selectedNote = nil
             }
         }
         .onAppear {
@@ -399,30 +413,33 @@ struct HomeView: View {
                         let style = SpecialtyStyle.forSpecialty(doc.specialty)
                         let initial = doc.name.split(separator: " ").last?.first.map(String.init) ?? "D"
 
-                        VStack(alignment: .leading, spacing: 10) {
-                            ZStack {
-                                LinearGradient(colors: style.gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
-                                Text(initial)
-                                    .font(.system(size: 15, weight: .semibold))
-                                    .foregroundStyle(.white)
-                            }
-                            .frame(width: 44, height: 44)
-                            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                        Button { selectedDoctor = doc } label: {
+                            VStack(alignment: .leading, spacing: 10) {
+                                ZStack {
+                                    LinearGradient(colors: style.gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
+                                    Text(initial)
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundStyle(.white)
+                                }
+                                .frame(width: 44, height: 44)
+                                .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
 
-                            Text(doc.name)
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundStyle(Color.nearBlack)
-                                .lineLimit(1)
-                            Text(doc.specialty)
-                                .font(.system(size: 11))
-                                .foregroundStyle(Color.mutedFg)
-                                .lineLimit(1)
+                                Text(doc.name)
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundStyle(Color.nearBlack)
+                                    .lineLimit(1)
+                                Text(doc.specialty)
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(Color.mutedFg)
+                                    .lineLimit(1)
+                            }
+                            .frame(width: 140)
+                            .padding(16)
+                            .background(Color.cardBg)
+                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                            .warmShadow()
                         }
-                        .frame(width: 140)
-                        .padding(16)
-                        .background(Color.cardBg)
-                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                        .warmShadow()
+                        .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal, 20)
@@ -442,34 +459,38 @@ struct HomeView: View {
             VStack(spacing: 10) {
                 ForEach(notes.prefix(2)) { note in
                     let style = CategoryStyle.forCategory(note.category)
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack(alignment: .top) {
-                            Text(note.title)
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundStyle(Color.nearBlack)
-                                .lineLimit(1)
-                            Spacer()
-                            Text(note.category)
-                                .font(.system(size: 10, weight: .semibold))
-                                .foregroundStyle(style.color)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 3)
-                                .background(style.color.opacity(0.1))
-                                .clipShape(Capsule())
+                    Button { selectedNote = note } label: {
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack(alignment: .top) {
+                                Text(note.title)
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundStyle(Color.nearBlack)
+                                    .lineLimit(1)
+                                Spacer()
+                                Text(note.category)
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .foregroundStyle(style.color)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 3)
+                                    .background(style.color.opacity(0.1))
+                                    .clipShape(Capsule())
+                            }
+                            Text(note.content)
+                                .font(.system(size: 13))
+                                .foregroundStyle(Color.mutedFg)
+                                .lineLimit(2)
+                                .multilineTextAlignment(.leading)
+                            Text(note.createdAt, format: .dateTime.month(.wide).day().year())
+                                .font(.system(size: 11))
+                                .foregroundStyle(Color.mutedFg.opacity(0.5))
                         }
-                        Text(note.content)
-                            .font(.system(size: 13))
-                            .foregroundStyle(Color.mutedFg)
-                            .lineLimit(2)
-                        Text(note.createdAt, format: .dateTime.month(.wide).day().year())
-                            .font(.system(size: 11))
-                            .foregroundStyle(Color.mutedFg.opacity(0.5))
+                        .padding(16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.cardBg)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .warmShadow()
                     }
-                    .padding(16)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.cardBg)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .warmShadow()
+                    .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal, 20)
