@@ -174,21 +174,34 @@ All design tokens live in `SharedComponents.swift` as `Color` static extensions.
 
 ### Color Tokens
 
+Core tokens are **adaptive** (light/dark) via `Color.adaptive(light:dark:)`, which uses a `UIColor` dynamic trait provider internally. Accent/gradient colors are static — they work on both modes without adaptation.
+
 ```swift
-Color.bg           // #F6F2EC — warm cream, app background
-Color.cardBg       // white — card surfaces
-Color.mutedBg      // #E8E2D9 — subtle backgrounds
-Color.nearBlack    // #1A1612 — primary text
-Color.mutedFg      // #8C8279 — secondary/muted text
+// Adaptive tokens (light / dark)
+Color.bg           // #F6F2EC / #1C1816 — app background
+Color.cardBg       // #FFFFFF / #2A2520 — card surfaces
+Color.mutedBg      // #E8E2D9 / #231F1B — subtle backgrounds
+Color.nearBlack    // #1A1612 / #EBE6DF — primary text
+Color.mutedFg      // #8C8279 / #9E958C — secondary/muted text
+Color.destructive  // #DC2626 / #EF4444 — delete buttons (brighter in dark)
+
+// Static tokens (same in both modes)
 Color.primaryTeal  // #0D7C66 — primary accent
 
-// Gradient palette
+// Gradient palette (static)
 Color.tealStart / .tealEnd       // #0D7C66 / #059669
 Color.amberStart / .amberEnd     // #D97706 / #F59E0B
 Color.cyanStart / .cyanEnd       // #0891B2 / #06B6D4
 Color.purpleStart / .purpleEnd   // #7C3AED / #A78BFA
 Color.roseStart / .roseEnd       // #E11D48 / #F43F5E
 ```
+
+**Dark mode notes:**
+- App follows system appearance — no in-app toggle
+- `.white` on gradient backgrounds (hero, buttons, avatars, date badges) is intentional in both modes
+- Shadows are unchanged — they naturally fade on dark surfaces
+- To add new adaptive colors: `Color.adaptive(light: "HEXLIGHT", dark: "HEXDARK")`
+- Do NOT use `UIColor(Color(hex:))` — use the private `uiColor(hex:)` helper (see CLAUDE.md pitfalls)
 
 ### Per-Tab Gradient Colors
 
