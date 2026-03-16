@@ -14,6 +14,21 @@ struct VitalsView: View {
     @State private var selected: VitalRecord? = nil
     @State private var searchText = ""
     @State private var selectedType: String? = nil
+    @State private var healthKitService = HealthKitService()
+    @State private var isImporting = false
+    @State private var importResult: ImportResult? = nil
+
+    private enum ImportResult: Identifiable {
+        case success(Int)
+        case error(String)
+
+        var id: String {
+            switch self {
+            case .success(let n): return "success-\(n)"
+            case .error(let msg): return "error-\(msg)"
+            }
+        }
+    }
 
     private var filteredVitals: [VitalRecord] {
         var result = vitals
@@ -73,6 +88,28 @@ struct VitalsView: View {
                             .foregroundStyle(Color.mutedFg)
                     }
                     Spacer()
+                    if healthKitService.isAvailable {
+                        Button {
+                            Task { await importFromHealthKit() }
+                        } label: {
+                            Group {
+                                if isImporting {
+                                    ProgressView()
+                                        .tint(.white)
+                                } else {
+                                    Image(systemName: "heart.fill")
+                                        .font(.system(size: 16, weight: .medium))
+                                }
+                            }
+                            .foregroundStyle(.white)
+                            .frame(width: 40, height: 40)
+                            .background(
+                                LinearGradient(colors: [.roseStart, .roseEnd], startPoint: .topLeading, endPoint: .bottomTrailing)
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        }
+                        .disabled(isImporting)
+                    }
                     GradientAddButton(gradient: [.roseStart, .roseEnd]) { showAdd = true }
                 }
                 .padding(.horizontal, 20)
@@ -159,6 +196,65 @@ struct VitalsView: View {
                 modelContext.delete(vital)
                 selected = nil
             }
+        }
+        .alert(
+            importResult.flatMap {
+                if case .success = $0 { return "Import Complete" }
+                return "Import Failed"
+            } ?? "",
+            isPresented: Binding(
+                get: { importResult != nil },
+                set: { if !$0 { importResult = nil } }
+            )
+        ) {
+            Button("OK") { importResult = nil }
+        } message: {
+            switch importResult {
+            case .success(let count):
+                if count > 0 {
+                    Text("Imported \(count) new reading\(count == 1 ? "" : "s") from Apple Health.")
+                } else {
+                    Text("No new readings to import.")
+                }
+            case .error(let msg):
+                Text(msg)
+            case nil:
+                EmptyView()
+            }
+        }
+    }
+
+    private func importFromHealthKit() async {
+        isImporting = true
+        defer { isImporting = false }
+
+        do {
+            try await healthKitService.requestAuthorization()
+            let imported = try await healthKitService.fetchRecentVitals()
+
+            var insertedCount = 0
+            for iv in imported {
+                let isDuplicate = vitals.contains { existing in
+                    existing.type == iv.type &&
+                    abs(existing.recordedAt.timeIntervalSince(iv.recordedAt)) < 60
+                }
+                if !isDuplicate {
+                    let record = VitalRecord(
+                        type: iv.type,
+                        value: iv.value,
+                        secondaryValue: iv.secondaryValue,
+                        unit: iv.unit,
+                        source: "healthkit",
+                        recordedAt: iv.recordedAt
+                    )
+                    modelContext.insert(record)
+                    insertedCount += 1
+                }
+            }
+
+            importResult = .success(insertedCount)
+        } catch {
+            importResult = .error(error.localizedDescription)
         }
     }
 
