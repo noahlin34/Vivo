@@ -12,12 +12,21 @@ struct AppointmentsView: View {
     @Query(sort: \Appointment.date) private var appointments: [Appointment]
     @State private var showAdd = false
     @State private var selected: Appointment? = nil
+    @State private var searchText = ""
 
+    private var filtered: [Appointment] {
+        guard !searchText.isEmpty else { return appointments }
+        return appointments.filter {
+            $0.title.localizedCaseInsensitiveContains(searchText) ||
+            $0.displayDoctorName.localizedCaseInsensitiveContains(searchText) ||
+            $0.location.localizedCaseInsensitiveContains(searchText)
+        }
+    }
     private var upcoming: [Appointment] {
-        appointments.filter { $0.date >= Calendar.current.startOfDay(for: Date()) }
+        filtered.filter { $0.date >= Calendar.current.startOfDay(for: Date()) }
     }
     private var past: [Appointment] {
-        appointments.filter { $0.date < Calendar.current.startOfDay(for: Date()) }.reversed()
+        filtered.filter { $0.date < Calendar.current.startOfDay(for: Date()) }.reversed()
     }
 
     var body: some View {
@@ -40,8 +49,34 @@ struct AppointmentsView: View {
                 .padding(.top, 56)
                 .padding(.bottom, 20)
 
+                // Search bar
+                HStack(spacing: 10) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 15))
+                        .foregroundStyle(Color.mutedFg.opacity(0.6))
+                    TextField("Search appointments...", text: $searchText)
+                        .font(.system(size: 14))
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 11)
+                .background(Color.cardBg)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .warmShadow()
+                .padding(.horizontal, 20)
+                .padding(.bottom, 14)
+
                 if appointments.isEmpty {
                     emptyState
+                } else if filtered.isEmpty {
+                    Text("No results for \"\(searchText)\"")
+                        .font(.system(size: 15))
+                        .foregroundStyle(Color.mutedFg)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(24)
+                        .background(Color.cardBg)
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .warmShadow()
+                        .padding(.horizontal, 20)
                 } else {
                     VStack(spacing: 20) {
                         if !upcoming.isEmpty {
