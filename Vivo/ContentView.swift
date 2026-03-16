@@ -23,6 +23,7 @@ struct ContentView: View {
             default: HomeView(selectedTab: $selectedTab)
             }
         }
+        .transaction { $0.animation = nil }
         .tint(Color.primaryTeal)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             CustomTabBar(selectedTab: $selectedTab)
@@ -90,7 +91,9 @@ struct CustomTabBar: View {
         let isActive = selectedTab == index
 
         Button {
-            selectedTab = index
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                selectedTab = index
+            }
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
         } label: {
             VStack(spacing: 3) {
