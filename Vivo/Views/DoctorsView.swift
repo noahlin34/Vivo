@@ -139,6 +139,7 @@ struct DoctorDetailSheet: View {
     let onDelete: () -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var showEdit = false
+    @State private var selectedAppt: Appointment? = nil
 
     private var sortedAppointments: [Appointment] {
         (doctor.appointments ?? []).sorted { $0.date < $1.date }
@@ -240,7 +241,10 @@ struct DoctorDetailSheet: View {
                                         .padding(.horizontal, 20)
                                     VStack(spacing: 8) {
                                         ForEach(upcomingAppts) { appt in
-                                            apptRow(appt, isPast: false)
+                                            Button { selectedAppt = appt } label: {
+                                                apptRow(appt, isPast: false)
+                                            }
+                                            .buttonStyle(.plain)
                                         }
                                     }
                                     .padding(.horizontal, 20)
@@ -253,7 +257,10 @@ struct DoctorDetailSheet: View {
                                         .padding(.horizontal, 20)
                                     VStack(spacing: 8) {
                                         ForEach(pastAppts) { appt in
-                                            apptRow(appt, isPast: true)
+                                            Button { selectedAppt = appt } label: {
+                                                apptRow(appt, isPast: true)
+                                            }
+                                            .buttonStyle(.plain)
                                         }
                                     }
                                     .padding(.horizontal, 20)
@@ -297,6 +304,13 @@ struct DoctorDetailSheet: View {
             }
             .sheet(isPresented: $showEdit) {
                 EditDoctorView(doctor: doctor)
+            }
+            .sheet(item: $selectedAppt) { appt in
+                AppointmentDetailSheet(appointment: appt) {
+                    AppointmentNotifications.cancel(for: appt)
+                    appt.modelContext?.delete(appt)
+                    selectedAppt = nil
+                }
             }
         }
         .presentationDetents([.medium, .large])
