@@ -23,7 +23,6 @@ struct ContentView: View {
             default: HomeView(selectedTab: $selectedTab)
             }
         }
-        .transaction { $0.animation = nil }
         .tint(Color.primaryTeal)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             CustomTabBar(selectedTab: $selectedTab)
@@ -41,20 +40,22 @@ private struct TabItemDef {
 }
 
 private let tabItems: [TabItemDef] = [
-    .init(icon: "house",                activeIcon: "house.fill",              label: "Home",    color: .primaryTeal),
-    .init(icon: "pill",                 activeIcon: "pill.fill",               label: "Meds",    color: .tealStart),
-    .init(icon: "stethoscope",          activeIcon: "stethoscope",             label: "Doctors", color: .amberStart),
-    .init(icon: "calendar",             activeIcon: "calendar",                label: "Appts",   color: .cyanStart),
-    .init(icon: "waveform.path.ecg",    activeIcon: "waveform.path.ecg",       label: "Vitals",  color: .roseStart),
-    .init(icon: "note.text",            activeIcon: "note.text",               label: "Notes",   color: .purpleStart),
+    .init(icon: "house",             activeIcon: "house.fill",         label: "Home",    color: .primaryTeal),
+    .init(icon: "pill",              activeIcon: "pill.fill",          label: "Meds",    color: .tealStart),
+    .init(icon: "stethoscope",       activeIcon: "stethoscope",        label: "Doctors", color: .amberStart),
+    .init(icon: "calendar",          activeIcon: "calendar",           label: "Appts",   color: .cyanStart),
+    .init(icon: "waveform.path.ecg", activeIcon: "waveform.path.ecg",  label: "Vitals",  color: .roseStart),
+    .init(icon: "note.text",         activeIcon: "note.text",          label: "Notes",   color: .purpleStart),
 ]
 
 struct CustomTabBar: View {
     @Binding var selectedTab: Int
 
+    private let spring = Animation.spring(response: 0.3, dampingFraction: 0.7)
+
     var body: some View {
         VStack(spacing: 0) {
-            // Gradient fade above the bar (from bg to transparent going upward)
+            // Gradient fade above the bar
             LinearGradient(
                 colors: [Color.bg.opacity(0), Color.bg],
                 startPoint: .top,
@@ -73,7 +74,6 @@ struct CustomTabBar: View {
             .padding(.top, 6)
             .padding(.bottom, 8)
             .background {
-                // Frosted glass background that extends behind the home indicator
                 Color.cardBg.opacity(0.7)
                     .background(.ultraThinMaterial)
                     .overlay(alignment: .top) {
@@ -85,15 +85,13 @@ struct CustomTabBar: View {
         }
     }
 
-    @ViewBuilder
     private func tabButton(index: Int) -> some View {
         let item = tabItems[index]
         let isActive = selectedTab == index
 
-        Button {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                selectedTab = index
-            }
+        return Button {
+            guard selectedTab != index else { return }
+            selectedTab = index
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
         } label: {
             VStack(spacing: 3) {
@@ -109,18 +107,19 @@ struct CustomTabBar: View {
                 }
                 .frame(width: 38, height: 32)
 
-                // Label only on active tab
-                if isActive {
-                    Text(item.label)
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundStyle(item.color)
-                        .transition(.opacity.combined(with: .scale(scale: 0.8)))
-                }
+                // Label — always present, animated via opacity + scale
+                Text(item.label)
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundStyle(item.color)
+                    .scaleEffect(isActive ? 1 : 0.8)
+                    .opacity(isActive ? 1 : 0)
+                    .frame(height: isActive ? nil : 0)
+                    .clipped()
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 2)
             .offset(y: isActive ? -2 : 0)
-            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: selectedTab)
+            .animation(spring, value: isActive)
         }
         .buttonStyle(.plain)
     }
