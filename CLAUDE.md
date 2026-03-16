@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Vivo is a personal health management iOS app built with SwiftUI + SwiftData + CloudKit. It lets users track medications, doctors, appointments, and health notes, synced privately via iCloud.
+Vivo is a personal health management iOS app built with SwiftUI + SwiftData + CloudKit. It lets users track medications, doctors, appointments, health notes, and vitals, synced privately via iCloud.
 
 ## Key Facts
 
@@ -46,13 +46,15 @@ Vivo/
 │   ├── Medication.swift
 │   ├── Doctor.swift
 │   ├── Appointment.swift
-│   └── HealthNote.swift
+│   ├── HealthNote.swift
+│   └── VitalRecord.swift
 └── Views/
     ├── SharedComponents.swift   # Design tokens, shared views, helpers
     ├── HomeView.swift
     ├── MedicationsView.swift
     ├── DoctorsView.swift
     ├── AppointmentsView.swift
+    ├── VitalsView.swift
     └── NotesView.swift
 ```
 
@@ -65,7 +67,10 @@ Medication:   name, dosage, frequency, scheduledTime(Date), colorIndex(Int 0-5),
 Doctor:       name, specialty, phone, email, address, createdAt
 Appointment:  title, doctorName, date(Date), time(String), location, notes(String), createdAt
 HealthNote:   title, content, category(String), createdAt
+VitalRecord:  type(String), value(Double), secondaryValue(Double?), unit(String), notes(String), recordedAt(Date), createdAt
 ```
+
+`VitalType` enum (not stored — helper): `bloodPressure`, `weight`, `heartRate`, `bloodSugar` with `icon`, `unit`, `hasDualValue`, `formatValue()`, `color`/`gradient`. Blood Pressure uses `secondaryValue` for diastolic.
 
 Note: `Doctor` has no `colorIndex` — doctor color is derived entirely from specialty via `SpecialtyStyle.forSpecialty()`.
 
@@ -92,6 +97,7 @@ Color.tealStart / .tealEnd       // #0D7C66 / #059669
 Color.amberStart / .amberEnd     // #D97706 / #F59E0B
 Color.cyanStart / .cyanEnd       // #0891B2 / #06B6D4
 Color.purpleStart / .purpleEnd   // #7C3AED / #A78BFA
+Color.roseStart / .roseEnd       // #E11D48 / #F43F5E
 ```
 
 ### Per-Tab Gradient Colors
@@ -102,6 +108,7 @@ Color.purpleStart / .purpleEnd   // #7C3AED / #A78BFA
 | Meds         | teal → green          |
 | Doctors      | amber → yellow        |
 | Appointments | cyan → light cyan     |
+| Vitals       | rose → light rose     |
 | Notes        | purple → lavender     |
 
 ### Medication Color Palette (`colorIndex`)
@@ -119,6 +126,11 @@ Color.purpleStart / .purpleEnd   // #7C3AED / #A78BFA
 
 `SpecialtyStyle.forSpecialty(_ s: String)` returns `.color` and `.gradient`:
 - Primary Care → teal, Cardiologist → rose, Endocrinologist → purple, Dermatologist → amber, Neurologist → indigo, Orthopedist → green, Pediatrician → cyan
+
+### Vital Types
+
+`VitalTypeStyle.forType(_ t: String)` returns `.color`, `.gradient`, `.icon`:
+- Blood Pressure → rose/heart.fill, Weight → cyan/scalemass.fill, Heart Rate → rose/waveform.path.ecg, Blood Sugar → purple/drop.fill
 
 ### Typography
 
@@ -157,6 +169,7 @@ Reuse these — don't recreate them inline:
 - `MedicationCardRow(medication:)` — self-contained card: 6px color stripe + pill icon + name/dosage/time
 - `DoctorCardRow(doctor:)` — self-contained card: specialty gradient avatar + name/specialty
 - `AppointmentCardRow(appointment:, showTodayBadge:)` — self-contained card: date badge + title/doctor; amber top stripe + "Today" pill when today; 0.55 opacity when past
+- `VitalCardRow(vital:)` — self-contained card: rose gradient stripe + type icon + formatted value/time
 - `NoteCard(note:, onDelete:)` — gradient top bar + swipe-to-delete + context menu
 - `CategoryChip(title:, gradient:, isSelected:, action:)` — filter pill; gradient bg when selected, white when not
 - `SectionLabel(title:, dotColor:)` — uppercase section header with colored dot
@@ -199,7 +212,7 @@ The custom tab bar is ~100pt tall. The `safeAreaInset` that injects it does **no
 Spacer(minLength: 100)
 ```
 
-This is present in every tab's scroll content (HomeView, MedicationsView, DoctorsView, AppointmentsView, NotesView). Do not reduce this value.
+This is present in every tab's scroll content (HomeView, MedicationsView, DoctorsView, AppointmentsView, VitalsView, NotesView). Do not reduce this value.
 
 ## Common SwiftUI Pitfalls in This Project
 
@@ -266,10 +279,17 @@ Each tab view uses:
 ### HomeView
 - Receives a `selectedTab: Binding<Int>` parameter — used by quick-pill buttons to navigate to other tabs
 - Hero chips show today's med count and next appointment date
+- Tab indices: Meds(1), Doctors(2), Appts(3), Vitals(4), Notes(5)
 
 ### AppointmentsView
 - Divides list into **Upcoming** and **Past** sections using `SectionLabel`
 - Past appointments are shown in reverse chronological order and rendered at 0.55 opacity (handled by `AppointmentCardRow`)
+
+### VitalsView
+- Has a **search bar** and **type filter chips** (All + 4 vital types) using `CategoryChip`
+- Vitals grouped by date (Today, Yesterday, then by formatted date)
+- `VitalDetailSheet` shows 30-day trend chart (Swift Charts `LineMark`/`PointMark`); BP shows dual series (systolic/diastolic)
+- `AddVitalView` form with type picker and conditional dual-value fields for Blood Pressure
 
 ### NotesView
 - Has a **search bar** (`@State private var searchText`) that filters notes by title/content
