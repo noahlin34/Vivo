@@ -218,109 +218,178 @@ struct MedicationDetailSheet: View {
 
     private var color: Color { .medColor(medication.colorIndex) }
 
+    private var last7Days: [Date] {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        return (0..<7).reversed().compactMap { cal.date(byAdding: .day, value: -$0, to: today) }
+    }
+
+    private func dosesOn(_ day: Date) -> Int {
+        let cal = Calendar.current
+        return medication.takenDates.filter { cal.isDate($0, inSameDayAs: day) }.count
+    }
+
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                // Header
-                HStack(spacing: 16) {
-                    Image(systemName: "pill.fill")
-                        .font(.system(size: 28))
-                        .foregroundStyle(color)
-                        .frame(width: 64, height: 64)
-                        .background(color.opacity(0.12))
-                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(medication.name)
-                            .font(.system(size: 22, weight: .medium))
-                            .foregroundStyle(Color.nearBlack)
-                        Text(medication.dosage)
-                            .font(.system(size: 12))
-                            .foregroundStyle(color)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 4)
-                            .background(color.opacity(0.12))
-                            .clipShape(Capsule())
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(20)
-
-                // Details
+            ScrollView {
                 VStack(spacing: 0) {
-                    detailRow(label: "Frequency", value: medication.frequency)
-                    Divider().padding(.leading, 16)
-                    detailRow(label: "Time", value: medication.scheduledTime.formatted(.dateTime.hour().minute()))
-                    if !medication.notes.isEmpty {
-                        Divider().padding(.leading, 16)
-                        detailRow(label: "Notes", value: medication.notes)
-                    }
-                    if let count = medication.pillCount {
-                        Divider().padding(.leading, 16)
-                        let supplyText: String = {
-                            if count == 0 { return "Refill needed" }
-                            if let days = medication.daysRemaining { return "\(count) pills · ~\(days)d" }
-                            return "\(count) pills"
-                        }()
-                        HStack {
-                            Text("Supply")
-                                .font(.system(size: 12))
-                                .foregroundStyle(Color.mutedFg)
-                            Spacer()
-                            HStack(spacing: 5) {
-                                if medication.isLowSupply {
-                                    Image(systemName: "exclamationmark.triangle.fill")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(Color.amberStart)
-                                }
-                                Text(supplyText)
-                                    .font(.system(size: 14))
-                                    .foregroundStyle(medication.isLowSupply ? Color.amberStart : Color.nearBlack)
-                            }
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 14)
-
-                        Divider().padding(.leading, 16)
-                        Button {
-                            showRefill = true
-                        } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "arrow.counterclockwise")
-                                    .font(.system(size: 13))
-                                Text("Log Refill")
-                                    .font(.system(size: 14, weight: .medium))
-                            }
+                    // Header
+                    HStack(spacing: 16) {
+                        Image(systemName: "pill.fill")
+                            .font(.system(size: 28))
                             .foregroundStyle(color)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
+                            .frame(width: 64, height: 64)
+                            .background(color.opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(medication.name)
+                                .font(.system(size: 22, weight: .medium))
+                                .foregroundStyle(Color.nearBlack)
+                            Text(medication.dosage)
+                                .font(.system(size: 12))
+                                .foregroundStyle(color)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 4)
+                                .background(color.opacity(0.12))
+                                .clipShape(Capsule())
                         }
                     }
-                }
-                .background(Color.bg)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .padding(.horizontal, 20)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(20)
 
-                Spacer()
+                    // Details
+                    VStack(spacing: 0) {
+                        detailRow(label: "Frequency", value: medication.frequency)
+                        Divider().padding(.leading, 16)
+                        detailRow(label: "Time", value: medication.scheduledTime.formatted(.dateTime.hour().minute()))
+                        if !medication.notes.isEmpty {
+                            Divider().padding(.leading, 16)
+                            detailRow(label: "Notes", value: medication.notes)
+                        }
+                        if let count = medication.pillCount {
+                            Divider().padding(.leading, 16)
+                            let supplyText: String = {
+                                if count == 0 { return "Refill needed" }
+                                if let days = medication.daysRemaining { return "\(count) pills · ~\(days)d" }
+                                return "\(count) pills"
+                            }()
+                            HStack {
+                                Text("Supply")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(Color.mutedFg)
+                                Spacer()
+                                HStack(spacing: 5) {
+                                    if medication.isLowSupply {
+                                        Image(systemName: "exclamationmark.triangle.fill")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(Color.amberStart)
+                                    }
+                                    Text(supplyText)
+                                        .font(.system(size: 14))
+                                        .foregroundStyle(medication.isLowSupply ? Color.amberStart : Color.nearBlack)
+                                }
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 14)
 
-                // Delete button
-                Button {
-                    onDelete()
-                    dismiss()
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "trash")
-                        Text("Remove Medication")
+                            Divider().padding(.leading, 16)
+                            Button {
+                                showRefill = true
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "arrow.counterclockwise")
+                                        .font(.system(size: 13))
+                                    Text("Log Refill")
+                                        .font(.system(size: 14, weight: .medium))
+                                }
+                                .foregroundStyle(color)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                            }
+                        }
                     }
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(Color(hex: "DC2626"))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 52)
-                    .background(Color(hex: "DC2626").opacity(0.08))
+                    .background(Color.bg)
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .padding(.horizontal, 20)
+
+                    // 7-day adherence
+                    if medication.frequency != "As needed" {
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack {
+                                Text("Last 7 Days")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundStyle(Color.nearBlack)
+                                Spacer()
+                                let takenDays = last7Days.filter { dosesOn($0) >= medication.dosesRequired }.count
+                                Text("\(takenDays)/7 days")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(color)
+                            }
+
+                            HStack(spacing: 0) {
+                                ForEach(last7Days, id: \.self) { day in
+                                    let doses = dosesOn(day)
+                                    let complete = doses >= medication.dosesRequired
+                                    let isToday = Calendar.current.isDateInToday(day)
+
+                                    VStack(spacing: 5) {
+                                        Text(day.formatted(.dateTime.weekday(.narrow)))
+                                            .font(.system(size: 10, weight: .medium))
+                                            .foregroundStyle(Color.mutedFg)
+                                        ZStack {
+                                            Circle()
+                                                .fill(complete ? color : Color.mutedBg)
+                                                .frame(width: 30, height: 30)
+                                            if complete {
+                                                Image(systemName: "checkmark")
+                                                    .font(.system(size: 12, weight: .bold))
+                                                    .foregroundStyle(.white)
+                                            } else if doses > 0 {
+                                                Text("\(doses)")
+                                                    .font(.system(size: 11, weight: .semibold))
+                                                    .foregroundStyle(color)
+                                            }
+                                        }
+                                        if isToday {
+                                            Circle()
+                                                .fill(color)
+                                                .frame(width: 4, height: 4)
+                                        } else {
+                                            Spacer().frame(height: 4)
+                                        }
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                }
+                            }
+                        }
+                        .padding(16)
+                        .background(Color.bg)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .padding(.horizontal, 20)
+                        .padding(.top, 12)
+                    }
+
+                    // Delete button
+                    Button {
+                        onDelete()
+                        dismiss()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "trash")
+                            Text("Remove Medication")
+                        }
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(Color(hex: "DC2626"))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(Color(hex: "DC2626").opacity(0.08))
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
+                    .padding(.bottom, 24)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 24)
             }
             .background(Color.cardBg)
             .navigationTitle("Medication Details")
@@ -347,7 +416,7 @@ struct MedicationDetailSheet: View {
                 Text("How many pills are you adding?")
             }
         }
-        .presentationDetents([.medium])
+        .presentationDetents([.medium, .large])
         .presentationCornerRadius(24)
     }
 
