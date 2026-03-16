@@ -371,6 +371,7 @@ struct VitalDetailSheet: View {
 
     private var vitalType: VitalType? { VitalType(rawValue: vital.type) }
     private var style: VitalTypeStyle { VitalTypeStyle.forType(vital.type) }
+    private var isFromHealthKit: Bool { vital.source == "healthkit" }
     private var formattedValue: String {
         vitalType?.formatValue(vital.value, secondary: vital.secondaryValue) ?? "\(Int(vital.value))"
     }
@@ -414,6 +415,25 @@ struct VitalDetailSheet: View {
                             Divider().padding(.leading, 16)
                             detailRow(label: "Notes", value: vital.notes)
                         }
+                        if isFromHealthKit {
+                            Divider().padding(.leading, 16)
+                            HStack {
+                                Text("Source")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(Color.mutedFg)
+                                Spacer()
+                                HStack(spacing: 4) {
+                                    Image(systemName: "heart.fill")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(Color.roseStart)
+                                    Text("Apple Health")
+                                        .font(.system(size: 14))
+                                        .foregroundStyle(Color.nearBlack)
+                                }
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 14)
+                        }
                     }
                     .background(Color.bg)
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -426,25 +446,27 @@ struct VitalDetailSheet: View {
                             .padding(.top, 12)
                     }
 
-                    // Delete button
-                    Button {
-                        onDelete()
-                        dismiss()
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "trash")
-                            Text("Remove Reading")
+                    // Delete button (hidden for HealthKit records)
+                    if !isFromHealthKit {
+                        Button {
+                            onDelete()
+                            dismiss()
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "trash")
+                                Text("Remove Reading")
+                            }
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundStyle(Color(hex: "DC2626"))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(Color(hex: "DC2626").opacity(0.08))
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                         }
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(Color(hex: "DC2626"))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(Color(hex: "DC2626").opacity(0.08))
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .padding(.horizontal, 20)
+                        .padding(.top, 20)
+                        .padding(.bottom, 24)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
-                    .padding(.bottom, 24)
                 }
             }
             .background(Color.cardBg)
@@ -454,8 +476,10 @@ struct VitalDetailSheet: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") { dismiss() }
                 }
-                ToolbarItem(placement: .primaryAction) {
-                    Button("Edit") { showEdit = true }
+                if !isFromHealthKit {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button("Edit") { showEdit = true }
+                    }
                 }
             }
             .sheet(isPresented: $showEdit) {
