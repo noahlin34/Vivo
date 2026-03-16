@@ -22,7 +22,8 @@ struct ContentView: View {
             MedicationsView().tag(1)
             DoctorsView().tag(2)
             AppointmentsView().tag(3)
-            NotesView().tag(4)
+            VitalsView().tag(4)
+            NotesView().tag(5)
         }
         .tint(Color(hex: "0D7C66"))
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -40,11 +41,12 @@ private struct TabItemDef {
 }
 
 private let tabItems: [TabItemDef] = [
-    .init(icon: "house",       activeIcon: "house.fill",  label: "Home"),
-    .init(icon: "pill",        activeIcon: "pill.fill",   label: "Meds"),
-    .init(icon: "stethoscope", activeIcon: "stethoscope", label: "Doctors"),
-    .init(icon: "calendar",    activeIcon: "calendar",    label: "Appts"),
-    .init(icon: "note.text",   activeIcon: "note.text",   label: "Notes"),
+    .init(icon: "house",                activeIcon: "house.fill",              label: "Home"),
+    .init(icon: "pill",                 activeIcon: "pill.fill",               label: "Meds"),
+    .init(icon: "stethoscope",          activeIcon: "stethoscope",             label: "Doctors"),
+    .init(icon: "calendar",             activeIcon: "calendar",                label: "Appts"),
+    .init(icon: "waveform.path.ecg",    activeIcon: "waveform.path.ecg",       label: "Vitals"),
+    .init(icon: "note.text",            activeIcon: "note.text",               label: "Notes"),
 ]
 
 struct CustomTabBar: View {
