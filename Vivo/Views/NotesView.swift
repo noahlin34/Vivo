@@ -27,7 +27,6 @@ struct NotesView: View {
     }
 
     var body: some View {
-        NavigationStack {
         ScrollView {
             VStack(spacing: 0) {
                 // Header
@@ -108,8 +107,6 @@ struct NotesView: View {
             }
         }
         .background(Color.bg)
-        .toolbar(.hidden, for: .navigationBar)
-        }
         .sheet(isPresented: $showAdd) { AddNoteView() }
         .sheet(item: $selected) { note in
             NoteDetailSheet(note: note) {

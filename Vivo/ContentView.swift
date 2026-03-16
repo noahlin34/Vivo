@@ -11,19 +11,17 @@ import UIKit
 struct ContentView: View {
     @State private var selectedTab: Int = 0
 
-    init() {
-        // Hide the system tab bar — we render our own custom one
-        UITabBar.appearance().isHidden = true
-    }
-
     var body: some View {
-        TabView(selection: $selectedTab) {
-            HomeView(selectedTab: $selectedTab).tag(0)
-            MedicationsView().tag(1)
-            DoctorsView().tag(2)
-            AppointmentsView().tag(3)
-            VitalsView().tag(4)
-            NotesView().tag(5)
+        Group {
+            switch selectedTab {
+            case 0: HomeView(selectedTab: $selectedTab)
+            case 1: MedicationsView()
+            case 2: DoctorsView()
+            case 3: AppointmentsView()
+            case 4: VitalsView()
+            case 5: NotesView()
+            default: HomeView(selectedTab: $selectedTab)
+            }
         }
         .tint(Color.primaryTeal)
         .safeAreaInset(edge: .bottom, spacing: 0) {

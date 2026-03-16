@@ -84,7 +84,6 @@ struct VitalsView: View {
     private let typeFilters = VitalType.allCases
 
     var body: some View {
-        NavigationStack {
         ScrollView {
             VStack(spacing: 0) {
                 // Header
@@ -200,8 +199,6 @@ struct VitalsView: View {
             }
         }
         .background(Color.bg)
-        .toolbar(.hidden, for: .navigationBar)
-        }
         .sheet(isPresented: $showAdd) { AddVitalView() }
         .sheet(item: $selected) { vital in
             VitalDetailSheet(vital: vital) {
