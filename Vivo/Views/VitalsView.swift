@@ -227,6 +227,11 @@ struct VitalCardRow: View {
 
                 // Time badge
                 HStack(spacing: 4) {
+                    if vital.source == "healthkit" {
+                        Image(systemName: "heart.fill")
+                            .font(.system(size: 9))
+                            .foregroundStyle(Color.roseStart.opacity(0.6))
+                    }
                     Image(systemName: "clock")
                         .font(.system(size: 10))
                         .foregroundStyle(Color.mutedFg)
