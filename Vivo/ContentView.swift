@@ -23,6 +23,7 @@ struct ContentView: View {
             default: HomeView(selectedTab: $selectedTab)
             }
         }
+        .animation(.easeInOut(duration: 0.15), value: selectedTab)
         .tint(Color.primaryTeal)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             CustomTabBar(selectedTab: $selectedTab)
@@ -36,15 +37,16 @@ private struct TabItemDef {
     let icon: String
     let activeIcon: String
     let label: String
+    let color: Color
 }
 
 private let tabItems: [TabItemDef] = [
-    .init(icon: "house",                activeIcon: "house.fill",              label: "Home"),
-    .init(icon: "pill",                 activeIcon: "pill.fill",               label: "Meds"),
-    .init(icon: "stethoscope",          activeIcon: "stethoscope",             label: "Doctors"),
-    .init(icon: "calendar",             activeIcon: "calendar",                label: "Appts"),
-    .init(icon: "waveform.path.ecg",    activeIcon: "waveform.path.ecg",       label: "Vitals"),
-    .init(icon: "note.text",            activeIcon: "note.text",               label: "Notes"),
+    .init(icon: "house",                activeIcon: "house.fill",              label: "Home",    color: .primaryTeal),
+    .init(icon: "pill",                 activeIcon: "pill.fill",               label: "Meds",    color: .tealStart),
+    .init(icon: "stethoscope",          activeIcon: "stethoscope",             label: "Doctors", color: .amberStart),
+    .init(icon: "calendar",             activeIcon: "calendar",                label: "Appts",   color: .cyanStart),
+    .init(icon: "waveform.path.ecg",    activeIcon: "waveform.path.ecg",       label: "Vitals",  color: .roseStart),
+    .init(icon: "note.text",            activeIcon: "note.text",               label: "Notes",   color: .purpleStart),
 ]
 
 struct CustomTabBar: View {
@@ -89,19 +91,21 @@ struct CustomTabBar: View {
         let isActive = selectedTab == index
 
         Button {
-            selectedTab = index
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                selectedTab = index
+            }
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
         } label: {
             VStack(spacing: 3) {
                 ZStack {
                     // Active glow background
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(Color.primaryTeal.opacity(isActive ? 0.1 : 0))
+                        .fill(item.color.opacity(isActive ? 0.1 : 0))
                         .frame(width: 36, height: 32)
 
                     Image(systemName: isActive ? item.activeIcon : item.icon)
                         .font(.system(size: 18, weight: isActive ? .medium : .light))
-                        .foregroundStyle(isActive ? Color.primaryTeal : Color.mutedFg)
+                        .foregroundStyle(isActive ? item.color : Color.mutedFg)
                 }
                 .frame(width: 38, height: 32)
 
@@ -109,7 +113,7 @@ struct CustomTabBar: View {
                 if isActive {
                     Text(item.label)
                         .font(.system(size: 9, weight: .medium))
-                        .foregroundStyle(Color.primaryTeal)
+                        .foregroundStyle(item.color)
                         .transition(.opacity.combined(with: .scale(scale: 0.8)))
                 }
             }
