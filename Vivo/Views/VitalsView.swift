@@ -5,6 +5,7 @@
 
 import SwiftUI
 import SwiftData
+import Charts
 
 struct VitalsView: View {
     @Environment(\.modelContext) private var modelContext
@@ -360,12 +361,18 @@ struct VitalDetailSheet: View {
     let vital: VitalRecord
     let onDelete: () -> Void
     @Environment(\.dismiss) private var dismiss
+    @Query(sort: \VitalRecord.recordedAt) private var allVitals: [VitalRecord]
     @State private var showEdit = false
 
     private var vitalType: VitalType? { VitalType(rawValue: vital.type) }
     private var style: VitalTypeStyle { VitalTypeStyle.forType(vital.type) }
     private var formattedValue: String {
         vitalType?.formatValue(vital.value, secondary: vital.secondaryValue) ?? "\(Int(vital.value))"
+    }
+
+    private var trendData: [VitalRecord] {
+        let cutoff = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
+        return allVitals.filter { $0.type == vital.type && $0.recordedAt >= cutoff }
     }
 
     var body: some View {
@@ -407,6 +414,13 @@ struct VitalDetailSheet: View {
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     .padding(.horizontal, 20)
 
+                    // 30-day trend chart
+                    if trendData.count >= 2 {
+                        trendChart
+                            .padding(.horizontal, 20)
+                            .padding(.top, 12)
+                    }
+
                     // Delete button
                     Button {
                         onDelete()
@@ -445,6 +459,92 @@ struct VitalDetailSheet: View {
         }
         .presentationDetents([.medium, .large])
         .presentationCornerRadius(24)
+    }
+
+    private var trendChart: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("30-Day Trend")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(Color.nearBlack)
+
+            Chart {
+                if vitalType?.hasDualValue == true {
+                    ForEach(trendData) { record in
+                        LineMark(
+                            x: .value("Date", record.recordedAt),
+                            y: .value("Systolic", record.value),
+                            series: .value("Series", "Systolic")
+                        )
+                        .foregroundStyle(style.color)
+                        .interpolationMethod(.catmullRom)
+
+                        PointMark(
+                            x: .value("Date", record.recordedAt),
+                            y: .value("Systolic", record.value)
+                        )
+                        .foregroundStyle(style.color)
+                        .symbolSize(20)
+
+                        if let dia = record.secondaryValue {
+                            LineMark(
+                                x: .value("Date", record.recordedAt),
+                                y: .value("Diastolic", dia),
+                                series: .value("Series", "Diastolic")
+                            )
+                            .foregroundStyle(style.color.opacity(0.5))
+                            .interpolationMethod(.catmullRom)
+
+                            PointMark(
+                                x: .value("Date", record.recordedAt),
+                                y: .value("Diastolic", dia)
+                            )
+                            .foregroundStyle(style.color.opacity(0.5))
+                            .symbolSize(20)
+                        }
+                    }
+                } else {
+                    ForEach(trendData) { record in
+                        LineMark(
+                            x: .value("Date", record.recordedAt),
+                            y: .value("Value", record.value)
+                        )
+                        .foregroundStyle(style.color)
+                        .interpolationMethod(.catmullRom)
+
+                        PointMark(
+                            x: .value("Date", record.recordedAt),
+                            y: .value("Value", record.value)
+                        )
+                        .foregroundStyle(style.color)
+                        .symbolSize(20)
+                    }
+
+                    if let avg = trendData.isEmpty ? nil : trendData.map(\.value).reduce(0, +) / Double(trendData.count) {
+                        RuleMark(y: .value("Average", avg))
+                            .foregroundStyle(Color.mutedFg.opacity(0.4))
+                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                    }
+                }
+            }
+            .chartXAxis {
+                AxisMarks(values: .automatic(desiredCount: 5)) {
+                    AxisValueLabel(format: .dateTime.month(.abbreviated).day())
+                        .font(.system(size: 9))
+                    AxisGridLine()
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading) {
+                    AxisValueLabel()
+                        .font(.system(size: 10))
+                    AxisGridLine()
+                }
+            }
+            .frame(height: 180)
+        }
+        .padding(16)
+        .background(Color.bg)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     func detailRow(label: String, value: String) -> some View {
