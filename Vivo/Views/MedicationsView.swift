@@ -213,6 +213,8 @@ struct MedicationDetailSheet: View {
     let onDelete: () -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var showEdit = false
+    @State private var showRefill = false
+    @State private var refillAmount = 30
 
     private var color: Color { .medColor(medication.colorIndex) }
 
@@ -278,6 +280,21 @@ struct MedicationDetailSheet: View {
                         }
                         .padding(.horizontal, 16)
                         .padding(.vertical, 14)
+
+                        Divider().padding(.leading, 16)
+                        Button {
+                            showRefill = true
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "arrow.counterclockwise")
+                                    .font(.system(size: 13))
+                                Text("Log Refill")
+                                    .font(.system(size: 14, weight: .medium))
+                            }
+                            .foregroundStyle(color)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                        }
                     }
                 }
                 .background(Color.bg)
@@ -318,6 +335,16 @@ struct MedicationDetailSheet: View {
             }
             .sheet(isPresented: $showEdit) {
                 EditMedicationView(medication: medication)
+            }
+            .alert("Log Refill", isPresented: $showRefill) {
+                TextField("Number of pills", value: $refillAmount, format: .number)
+                    .keyboardType(.numberPad)
+                Button("Add") {
+                    medication.pillCount = (medication.pillCount ?? 0) + refillAmount
+                }
+                Button("Cancel", role: .cancel) { }
+            } message: {
+                Text("How many pills are you adding?")
             }
         }
         .presentationDetents([.medium])
