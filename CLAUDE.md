@@ -41,7 +41,7 @@ After making changes, always run a build to confirm no compiler errors before fi
 ```
 Vivo/
 ├── VivoApp.swift          # @main, ModelContainer + CloudKit config
-├── ContentView.swift      # TabView root + CustomTabBar (6 tabs)
+├── ContentView.swift      # TabView root + CustomTabBar (5 tabs)
 ├── Info.plist             # UIBackgroundModes: remote-notification
 ├── Vivo.entitlements      # iCloud/CloudKit + APS entitlements
 ├── Models/
@@ -57,8 +57,9 @@ Vivo/
     ├── OnboardingView.swift     # 4-page swipeable onboarding flow
     ├── HomeView.swift
     ├── MedicationsView.swift
-    ├── DoctorsView.swift
-    ├── AppointmentsView.swift
+    ├── CareView.swift           # Combined doctors + appointments
+    ├── DoctorsView.swift        # Detail/Add/Edit sheets for doctors
+    ├── AppointmentsView.swift   # Detail/Add/Edit sheets for appointments
     ├── VitalsView.swift
     └── NotesView.swift
 ```
@@ -209,8 +210,7 @@ Color.roseStart / .roseEnd       // #E11D48 / #F43F5E
 |--------------|-----------------------|
 | Home (hero)  | teal → green → cyan   |
 | Meds         | teal → green          |
-| Doctors      | amber → yellow        |
-| Appointments | cyan → light cyan     |
+| Care         | amber → yellow        |
 | Vitals       | rose → light rose     |
 | Notes        | purple → lavender     |
 
@@ -252,11 +252,12 @@ Each card component is **self-contained** — it includes its own background, cl
 
 The system tab bar is **hidden** (`UITabBar.appearance().isHidden = true` in `ContentView.init()`). A custom `CustomTabBar` is injected via `.safeAreaInset(edge: .bottom, spacing: 0)` on the `TabView`.
 
-`CustomTabBar` features (6 tabs):
-- Frosted glass background: `Color.white.opacity(0.7)` + `.ultraThinMaterial`, extends behind home indicator via `.ignoresSafeArea(edges: .bottom)`
+`CustomTabBar` features (5 tabs: Home, Meds, Care, Vitals, Notes):
+- Frosted glass background: `Color.cardBg.opacity(0.7)` + `.ultraThinMaterial`, extends behind home indicator via `.ignoresSafeArea(edges: .bottom)`
 - 24pt gradient fade above the bar (non-interactive)
-- **Active tab**: 18pt teal icon + 36×32 glow background + label (9pt medium) + `-2pt` offset
+- **Active tab**: 18pt icon in per-tab color + 36×32 glow background + label (9pt medium) + `-2pt` offset
 - **Inactive tab**: 18pt muted icon only — **no label** (labels appear only on active tab with opacity+scale transition)
+- Per-tab accent colors: Home=teal, Meds=teal, Care=amber, Vitals=rose, Notes=purple
 - Spring animation + light haptic on tap
 
 ## Shared Components (SharedComponents.swift)
@@ -379,7 +380,7 @@ Each tab view uses:
 ### HomeView (tab 0)
 - Receives a `selectedTab: Binding<Int>` parameter — used by quick-pill buttons to navigate to other tabs
 - **Hero section**: gradient background with date, "My Health" title, medication progress ring (animated), next appointment chip
-- **Quick pills** (5): Meds(1), Doctors(2), Appts(3), Vitals(4), Notes(5) — each shows icon + label + count
+- **Quick pills** (4): Meds(1), Care(2), Vitals(3), Notes(4) — each shows icon + label + count
 - **Today's Medications**: first 3 meds with "See all" when > 3
 - **Upcoming**: next 3 appointments with amber "Today" badge
 - **Care Team**: horizontal scroll of doctor cards (if non-empty)
@@ -394,25 +395,22 @@ Each tab view uses:
 - **Detail sheet**: 7-day adherence calendar, supply tracking with "Log Refill" button
 - **Add/Edit views**: name, dosage, frequency picker, time picker, color picker (6 inline), refill tracking toggle + stepper
 
-### DoctorsView (tab 2)
-- **Search bar** (name or specialty)
-- **Detail sheet**: specialty avatar, tappable contact rows (phone/email/address), appointment history (Upcoming + Past sections)
-- **Swipe-to-delete** with confirmation dialog
+### CareView (tab 2)
+- Combined doctors + appointments view
+- **Search bar** (searches doctors by name/specialty, appointments by title/doctor/location)
+- **Menu add button** (+): offers "Add Appointment" and "Add Doctor"
+- **Upcoming** section: appointment cards with today badge
+- **Care Team** section: doctor cards
+- **Past** section: past appointments in reverse chronological order
+- Reuses `DoctorDetailSheet`, `AddDoctorView`, `AppointmentDetailSheet`, `AddAppointmentView` from their original files
 
-### AppointmentsView (tab 3)
-- **Search bar** (title, doctor name, location)
-- **Upcoming** and **Past** sections using `SectionLabel`
-- Past appointments shown in reverse chronological order at 0.55 opacity
-- **Detail sheet**: title, linked doctor (tappable), date/time/location/notes
-- **Add view**: title, doctor picker (dropdown from existing doctors or text field), date/time pickers, location, notes
-
-### VitalsView (tab 4)
+### VitalsView (tab 3)
 - **Search bar** and **type filter chips** (All + 4 vital types) using `CategoryChip`
 - Vitals grouped by date (Today, Yesterday, then by formatted date)
 - **Detail sheet**: large value display, detail rows, **30-day trend chart** (Swift Charts `LineMark`/`PointMark`); BP shows dual series (systolic/diastolic), others show single line + dashed average rule mark
 - **Add view**: type picker, conditional dual-value fields for Blood Pressure, date/time picker, notes
 
-### NotesView (tab 5)
+### NotesView (tab 4)
 - **Search bar** (`@State private var searchText`) that filters notes by title/content
 - **Category filter chips** (`@State private var selectedCategory`) using `CategoryChip` — one chip per category plus "All"
 - `NoteCard` handles its own delete UI via swipe-to-delete and context menu
