@@ -41,7 +41,9 @@ After making changes, always run a build to confirm no compiler errors before fi
 ```
 Vivo/
 ├── VivoApp.swift          # @main, ModelContainer + CloudKit config
-├── ContentView.swift      # TabView root + CustomTabBar
+├── ContentView.swift      # TabView root + CustomTabBar (6 tabs)
+├── Info.plist             # UIBackgroundModes: remote-notification
+├── Vivo.entitlements      # iCloud/CloudKit + APS entitlements
 ├── Models/
 │   ├── Medication.swift
 │   ├── Doctor.swift
@@ -50,6 +52,7 @@ Vivo/
 │   └── VitalRecord.swift
 └── Views/
     ├── SharedComponents.swift   # Design tokens, shared views, helpers
+    ├── OnboardingView.swift     # 4-page swipeable onboarding flow
     ├── HomeView.swift
     ├── MedicationsView.swift
     ├── DoctorsView.swift
@@ -62,21 +65,91 @@ Vivo/
 
 All models use `@Model final class` and are registered in `VivoApp.swift`.
 
+### Medication
+
 ```swift
-Medication:   name, dosage, frequency, scheduledTime(Date), colorIndex(Int 0-5), notes(String), createdAt
-Doctor:       name, specialty, phone, email, address, createdAt
-Appointment:  title, doctorName, date(Date), time(String), location, notes(String), createdAt
-HealthNote:   title, content, category(String), createdAt
-VitalRecord:  type(String), value(Double), secondaryValue(Double?), unit(String), notes(String), recordedAt(Date), createdAt
+name, dosage, frequency, scheduledTime(Date), colorIndex(Int 0-5), notes(String),
+takenDates([Date]), pillCount(Int?), createdAt
+```
+
+Computed properties:
+- `dosesRequired: Int` — 0 for "As needed", 1/2/3 based on frequency
+- `dosesTakenToday: Int` — count of `takenDates` entries from today
+- `isTakenToday: Bool` — true when all required doses are logged
+- `daysRemaining: Int?` — `pillCount / dosesRequired` (nil if not tracking)
+- `isLowSupply: Bool` — true when <= 7 days remain
+
+### Doctor
+
+```swift
+name, specialty, phone, email, address, colorIndex(Int),
+appointments([Appointment]?, @Relationship deleteRule: .nullify, inverse: \Appointment.doctor),
+createdAt
+```
+
+Note: `colorIndex` exists on the model but doctor colors in the UI are derived from specialty via `SpecialtyStyle.forSpecialty()`.
+
+### Appointment
+
+```swift
+title, doctorName, doctor(Doctor?, @Relationship deleteRule: .nullify),
+date(Date), location, notes, createdAt
+```
+
+Computed: `displayDoctorName` — returns `doctor?.name ?? doctorName`
+
+### HealthNote
+
+```swift
+title, content, category(String, default "General"), createdAt
+```
+
+Categories: "Vitals", "Medications", "Lifestyle", "Questions", "Symptoms", "General"
+
+### VitalRecord
+
+```swift
+type(String), value(Double), secondaryValue(Double?), unit(String),
+notes(String), recordedAt(Date), createdAt
 ```
 
 `VitalType` enum (not stored — helper): `bloodPressure`, `weight`, `heartRate`, `bloodSugar` with `icon`, `unit`, `hasDualValue`, `formatValue()`, `color`/`gradient`. Blood Pressure uses `secondaryValue` for diastolic.
 
-Note: `Doctor` has no `colorIndex` — doctor color is derived entirely from specialty via `SpecialtyStyle.forSpecialty()`.
+### CloudKit
 
-CloudKit sync is configured with `.private("iCloud.com.noahlin.Vivo")`. Testing sync requires a physical device signed into iCloud with the container created in the Apple Developer Portal.
+Sync is configured with `.private("iCloud.com.noahlin.Vivo")`. Testing sync requires a physical device signed into iCloud with the container created in the Apple Developer Portal.
 
 **Simulator**: CloudKit is skipped on simulator via `#if targetEnvironment(simulator)` — uses local-only SwiftData storage.
+
+## Notification Systems
+
+### MedicationNotifications (in MedicationsView.swift)
+
+- Base ID derived from `medication.createdAt.timeIntervalSince1970`
+- "As needed" meds: no notifications
+- Scheduled meds: repeating calendar triggers at `scheduledTime` with hour offsets:
+  - Once daily: `[0]`
+  - Twice daily: `[0, 12]`
+  - Three times daily: `[0, 8, 16]`
+- Identifiers: `"\(base)-0"`, `"\(base)-1"`, `"\(base)-2"`
+
+### AppointmentNotifications (in AppointmentsView.swift)
+
+- Base ID derived from `appointment.createdAt.timeIntervalSince1970`
+- Fires **1 day before** and **1 hour before** (non-repeating)
+- Body includes doctor name via `displayDoctorName`
+- Only schedules if fire time is in the future
+- Identifiers: `"\(base)-day"`, `"\(base)-hour"`
+
+Both notification enums have `schedule(for:)` and `cancel(for:)` static methods.
+
+## Onboarding (OnboardingView.swift)
+
+- 4 swipeable pages (TabView `.page` style): Welcome → Medications → Doctors → Notes
+- `@AppStorage("hasCompletedOnboarding")` toggles between OnboardingView and ContentView
+- Skip button appears on pages 2–4
+- Animated dot indicator (selected dot 22pt wide, others 8pt)
+- "Next" button advances; "Get Started" on final page completes onboarding
 
 ## Design System
 
@@ -117,17 +190,13 @@ Color.roseStart / .roseEnd       // #E11D48 / #F43F5E
 
 `Color.medHexColors` — array of 6 hex strings in the same order, used for color picker UI.
 
-### Note Categories
-
-`CategoryStyle.forCategory(_ c: String)` returns `.color` and `.gradient`:
-- Vitals → rose, Medications → teal, Lifestyle → green, Questions → amber, Symptoms → purple, General → gray
-
-### Doctor Specialties
+### Style Lookups
 
 `SpecialtyStyle.forSpecialty(_ s: String)` returns `.color` and `.gradient`:
 - Primary Care → teal, Cardiologist → rose, Endocrinologist → purple, Dermatologist → amber, Neurologist → indigo, Orthopedist → green, Pediatrician → cyan
 
-### Vital Types
+`CategoryStyle.forCategory(_ c: String)` returns `.color` and `.gradient`:
+- Vitals → rose, Medications → teal, Lifestyle → green, Questions → amber, Symptoms → purple, General → gray
 
 `VitalTypeStyle.forType(_ t: String)` returns `.color`, `.gradient`, `.icon`:
 - Blood Pressure → rose/heart.fill, Weight → cyan/scalemass.fill, Heart Rate → rose/waveform.path.ecg, Blood Sugar → purple/drop.fill
@@ -153,11 +222,11 @@ Each card component is **self-contained** — it includes its own background, cl
 
 The system tab bar is **hidden** (`UITabBar.appearance().isHidden = true` in `ContentView.init()`). A custom `CustomTabBar` is injected via `.safeAreaInset(edge: .bottom, spacing: 0)` on the `TabView`.
 
-`CustomTabBar` features:
+`CustomTabBar` features (6 tabs):
 - Frosted glass background: `Color.white.opacity(0.7)` + `.ultraThinMaterial`, extends behind home indicator via `.ignoresSafeArea(edges: .bottom)`
 - 24pt gradient fade above the bar (non-interactive)
-- Active tab: teal icon + glow background + dot indicator, `-2pt` offset
-- Inactive tab: muted icon, no glow
+- **Active tab**: 18pt teal icon + 36×32 glow background + label (9pt medium) + `-2pt` offset
+- **Inactive tab**: 18pt muted icon only — **no label** (labels appear only on active tab with opacity+scale transition)
 - Spring animation + light haptic on tap
 
 ## Shared Components (SharedComponents.swift)
@@ -166,10 +235,10 @@ Reuse these — don't recreate them inline:
 
 - `GradientAddButton(gradient:, action:)` — floating `+` button, 16pt corner radius, gradient background
 - `GradientDateBadge(date:, isPast:, isToday:)` — 52×52pt date badge; muted when past, amber gradient when today, teal-cyan otherwise
-- `MedicationCardRow(medication:)` — self-contained card: 6px color stripe + pill icon + name/dosage/time
-- `DoctorCardRow(doctor:)` — self-contained card: specialty gradient avatar + name/specialty
+- `MedicationCardRow(medication:, onToggle:)` — self-contained card: 6px color stripe + pill icon + name/dosage/time; optional dose indicator (checkmark, progress dots, or +counter); strikethrough when taken; supply warning when low
+- `DoctorCardRow(doctor:)` — self-contained card: specialty gradient avatar + name/specialty + phone icon
 - `AppointmentCardRow(appointment:, showTodayBadge:)` — self-contained card: date badge + title/doctor; amber top stripe + "Today" pill when today; 0.55 opacity when past
-- `VitalCardRow(vital:)` — self-contained card: rose gradient stripe + type icon + formatted value/time
+- `VitalCardRow(vital:)` — self-contained card: gradient stripe + type icon + formatted value/time
 - `NoteCard(note:, onDelete:)` — gradient top bar + swipe-to-delete + context menu
 - `CategoryChip(title:, gradient:, isSelected:, action:)` — filter pill; gradient bg when selected, white when not
 - `SectionLabel(title:, dotColor:)` — uppercase section header with colored dot
@@ -267,38 +336,61 @@ UIColor(red: 246/255, green: 242/255, blue: 236/255, alpha: 0.97)
 Each tab view uses:
 - `@State private var selected: ModelType? = nil` for detail sheets
 - `.sheet(item: $selected)` — sheet appears when non-nil, dismissed by setting to nil
-- Detail sheets: `.presentationDetents([.medium])` + `.presentationCornerRadius(24)`
+- Detail sheets: `.presentationDetents([.medium])` or `.presentationDetents([.medium, .large])` + `.presentationCornerRadius(24)`
 - Full-content sheets (notes, edit forms): `.presentationDetents([.large])` or no detent
 - Each detail sheet has an **Edit** button in the toolbar that opens the corresponding `EditXxxView`
 - Deleting: red button in detail sheet calls `onDelete()` closure + `dismiss()`
 - `NoteCard` has **built-in swipe-to-delete** (`.swipeActions`) and a context menu delete — both call `onDelete()`
-- All other list rows (Medications, Doctors, Appointments) have no swipe-to-delete — delete only from the detail sheet
+- `MedicationCardRow` in MedicationsView has swipe-to-delete with `confirmationDialog`
+- Other list rows (Doctors, Appointments, Vitals) — delete only from the detail sheet
 
 ## Tab-Specific Features
 
-### HomeView
+### HomeView (tab 0)
 - Receives a `selectedTab: Binding<Int>` parameter — used by quick-pill buttons to navigate to other tabs
-- Hero chips show today's med count and next appointment date
-- Tab indices: Meds(1), Doctors(2), Appts(3), Vitals(4), Notes(5)
+- **Hero section**: gradient background with date, "My Health" title, medication progress ring (animated), next appointment chip
+- **Quick pills** (5): Meds(1), Doctors(2), Appts(3), Vitals(4), Notes(5) — each shows icon + label + count
+- **Today's Medications**: first 3 meds with "See all" when > 3
+- **Upcoming**: next 3 appointments with amber "Today" badge
+- **Care Team**: horizontal scroll of doctor cards (if non-empty)
+- **Recent Vitals**: last 3 readings with "See all" when > 3
+- **Recent Notes**: last 2 notes
 
-### AppointmentsView
-- Divides list into **Upcoming** and **Past** sections using `SectionLabel`
-- Past appointments are shown in reverse chronological order and rendered at 0.55 opacity (handled by `AppointmentCardRow`)
+### MedicationsView (tab 1)
+- **Search bar** (filters by name)
+- **Time-of-day grouping**: Morning (5–12), Afternoon (12–17), Evening (17–21), Night (other) — each group shows remaining dose count
+- **Dose toggle** on each card: checkmark for once daily, progress dots for multi-dose, +counter for as-needed
+- **Swipe-to-delete** with confirmation dialog
+- **Detail sheet**: 7-day adherence calendar, supply tracking with "Log Refill" button
+- **Add/Edit views**: name, dosage, frequency picker, time picker, color picker (6 inline), refill tracking toggle + stepper
 
-### VitalsView
-- Has a **search bar** and **type filter chips** (All + 4 vital types) using `CategoryChip`
+### DoctorsView (tab 2)
+- **Search bar** (name or specialty)
+- **Detail sheet**: specialty avatar, tappable contact rows (phone/email/address), appointment history (Upcoming + Past sections)
+- **Swipe-to-delete** with confirmation dialog
+
+### AppointmentsView (tab 3)
+- **Search bar** (title, doctor name, location)
+- **Upcoming** and **Past** sections using `SectionLabel`
+- Past appointments shown in reverse chronological order at 0.55 opacity
+- **Detail sheet**: title, linked doctor (tappable), date/time/location/notes
+- **Add view**: title, doctor picker (dropdown from existing doctors or text field), date/time pickers, location, notes
+
+### VitalsView (tab 4)
+- **Search bar** and **type filter chips** (All + 4 vital types) using `CategoryChip`
 - Vitals grouped by date (Today, Yesterday, then by formatted date)
-- `VitalDetailSheet` shows 30-day trend chart (Swift Charts `LineMark`/`PointMark`); BP shows dual series (systolic/diastolic)
-- `AddVitalView` form with type picker and conditional dual-value fields for Blood Pressure
+- **Detail sheet**: large value display, detail rows, **30-day trend chart** (Swift Charts `LineMark`/`PointMark`); BP shows dual series (systolic/diastolic), others show single line + dashed average rule mark
+- **Add view**: type picker, conditional dual-value fields for Blood Pressure, date/time picker, notes
 
-### NotesView
-- Has a **search bar** (`@State private var searchText`) that filters notes by title/content
-- Has **category filter chips** (`@State private var selectedCategory`) using `CategoryChip` — one chip per category plus "All"
+### NotesView (tab 5)
+- **Search bar** (`@State private var searchText`) that filters notes by title/content
+- **Category filter chips** (`@State private var selectedCategory`) using `CategoryChip` — one chip per category plus "All"
 - `NoteCard` handles its own delete UI via swipe-to-delete and context menu
+- **Add view**: title, category grid picker (LazyVGrid, 6 adaptive columns), TextEditor for content
 
 ## Edit Pattern
 
-All four model types support editing. Each edit view follows the same pattern:
+All five model types support editing. Each edit view follows the same pattern:
 
 ```swift
 struct EditFooView: View {
@@ -322,9 +414,14 @@ struct EditFooView: View {
 
 SwiftData `@Model` objects are reference types with `@Observable`. Mutating their properties directly is sufficient — no need to call `modelContext.save()`.
 
-## CloudKit Notes
+## Entitlements & Configuration
 
-- Container `iCloud.com.noahlin.Vivo` must exist in Apple Developer Portal → Identifiers → iCloud Containers
-- App ID must have iCloud (CloudKit) capability enabled
-- CloudKit sync only works on a physical device signed into iCloud (not simulator)
-- Simulator uses local-only storage (`#if targetEnvironment(simulator)` skips CloudKit config)
+**Vivo.entitlements**:
+- `aps-environment`: development (push notifications)
+- `com.apple.developer.icloud-container-identifiers`: `iCloud.com.noahlin.Vivo`
+- `com.apple.developer.icloud-services`: CloudKit
+
+**Info.plist**:
+- `UIBackgroundModes`: `remote-notification` (for CloudKit silent push sync)
+
+**Assets**: AccentColor + AppIcon in asset catalog. All colors defined in code via `Color(hex:)`, not asset colors.
