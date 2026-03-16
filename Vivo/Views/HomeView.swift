@@ -278,14 +278,12 @@ struct HomeView: View {
         HStack(spacing: 8) {
             quickPill(icon: "pill.fill", label: "Meds", count: medications.count,
                       gradient: [.tealStart, .tealEnd], tab: 1)
-            quickPill(icon: "stethoscope", label: "Doctors", count: doctors.count,
+            quickPill(icon: "stethoscope", label: "Care", count: doctors.count + allUpcomingAppointments.count,
                       gradient: [.amberStart, .amberEnd], tab: 2)
-            quickPill(icon: "calendar", label: "Appts", count: appointments.count,
-                      gradient: [.cyanStart, .cyanEnd], tab: 3)
             quickPill(icon: "waveform.path.ecg", label: "Vitals", count: vitals.count,
-                      gradient: [.roseStart, .roseEnd], tab: 4)
+                      gradient: [.roseStart, .roseEnd], tab: 3)
             quickPill(icon: "doc.fill", label: "Notes", count: notes.count,
-                      gradient: [.purpleStart, .purpleEnd], tab: 5)
+                      gradient: [.purpleStart, .purpleEnd], tab: 4)
         }
     }
 
@@ -388,7 +386,7 @@ struct HomeView: View {
                 Spacer()
                 if allUpcomingAppointments.count > 3 {
                     Button {
-                        selectedTab = 3
+                        selectedTab = 2
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     } label: {
                         HStack(spacing: 3) {
@@ -397,7 +395,7 @@ struct HomeView: View {
                                 .font(.system(size: 10, weight: .semibold))
                         }
                         .font(.system(size: 12))
-                        .foregroundStyle(Color.cyanStart)
+                        .foregroundStyle(Color.amberStart)
                     }
                 } else {
                     Text("\(allUpcomingAppointments.count) appts")
@@ -505,7 +503,7 @@ struct HomeView: View {
                 Spacer()
                 if vitals.count > 3 {
                     Button {
-                        selectedTab = 4
+                        selectedTab = 3
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     } label: {
                         HStack(spacing: 3) {
