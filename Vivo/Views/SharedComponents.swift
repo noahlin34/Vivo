@@ -29,6 +29,8 @@ extension Color {
     static let cyanEnd = Color(hex: "06B6D4")
     static let purpleStart = Color(hex: "7C3AED")
     static let purpleEnd = Color(hex: "A78BFA")
+    static let roseStart = Color(hex: "E11D48")
+    static let roseEnd = Color(hex: "F43F5E")
 
     // Medication color palette (by colorIndex 0–5)
     static let medHexColors: [String] = [
@@ -82,6 +84,22 @@ struct CategoryStyle {
         case "Questions":   return .init(color: Color(hex: "D97706"), gradient: [Color(hex: "D97706"), Color(hex: "F59E0B")])
         case "Symptoms":    return .init(color: Color(hex: "7C3AED"), gradient: [Color(hex: "7C3AED"), Color(hex: "A78BFA")])
         default:            return .init(color: Color(hex: "8C8279"), gradient: [Color(hex: "8C8279"), Color(hex: "A8A29E")])
+        }
+    }
+}
+
+struct VitalTypeStyle {
+    let color: Color
+    let gradient: [Color]
+    let icon: String
+
+    static func forType(_ t: String) -> VitalTypeStyle {
+        switch t {
+        case "Blood Pressure": return .init(color: Color(hex: "E11D48"), gradient: [Color(hex: "E11D48"), Color(hex: "F43F5E")], icon: "heart.fill")
+        case "Weight":         return .init(color: Color(hex: "0891B2"), gradient: [Color(hex: "0891B2"), Color(hex: "06B6D4")], icon: "scalemass.fill")
+        case "Heart Rate":     return .init(color: Color(hex: "E11D48"), gradient: [Color(hex: "E11D48"), Color(hex: "F43F5E")], icon: "waveform.path.ecg")
+        case "Blood Sugar":    return .init(color: Color(hex: "7C3AED"), gradient: [Color(hex: "7C3AED"), Color(hex: "A78BFA")], icon: "drop.fill")
+        default:               return .init(color: Color(hex: "E11D48"), gradient: [Color(hex: "E11D48"), Color(hex: "F43F5E")], icon: "heart.fill")
         }
     }
 }
