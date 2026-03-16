@@ -90,9 +90,7 @@ struct CustomTabBar: View {
         let isActive = selectedTab == index
 
         Button {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                selectedTab = index
-            }
+            selectedTab = index
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
         } label: {
             VStack(spacing: 3) {
