@@ -14,12 +14,14 @@ struct HomeView: View {
     @Query(sort: \Appointment.date) private var appointments: [Appointment]
     @Query private var doctors: [Doctor]
     @Query(sort: \HealthNote.createdAt, order: .reverse) private var notes: [HealthNote]
+    @Query(sort: \VitalRecord.recordedAt, order: .reverse) private var vitals: [VitalRecord]
 
     @State private var topSafeArea: CGFloat = 0
     @State private var selectedMed: Medication? = nil
     @State private var selectedAppt: Appointment? = nil
     @State private var selectedDoctor: Doctor? = nil
     @State private var selectedNote: HealthNote? = nil
+    @State private var selectedVital: VitalRecord? = nil
 
     private var allUpcomingAppointments: [Appointment] {
         appointments.filter { $0.date >= Calendar.current.startOfDay(for: Date()) }
@@ -79,6 +81,12 @@ struct HomeView: View {
             NoteDetailSheet(note: note) {
                 modelContext.delete(note)
                 selectedNote = nil
+            }
+        }
+        .sheet(item: $selectedVital) { vital in
+            VitalDetailSheet(vital: vital) {
+                modelContext.delete(vital)
+                selectedVital = nil
             }
         }
         .onAppear {
@@ -250,6 +258,11 @@ struct HomeView: View {
                 careTeamSection
             }
 
+            // Recent Vitals
+            if !vitals.isEmpty {
+                recentVitalsSection
+            }
+
             // Recent Notes
             if !notes.isEmpty {
                 recentNotesSection
@@ -262,15 +275,17 @@ struct HomeView: View {
     // MARK: - Quick Pills
 
     var quickPillsSection: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             quickPill(icon: "pill.fill", label: "Meds", count: medications.count,
                       gradient: [.tealStart, .tealEnd], tab: 1)
             quickPill(icon: "stethoscope", label: "Doctors", count: doctors.count,
                       gradient: [.amberStart, .amberEnd], tab: 2)
             quickPill(icon: "calendar", label: "Appts", count: appointments.count,
                       gradient: [.cyanStart, .cyanEnd], tab: 3)
+            quickPill(icon: "waveform.path.ecg", label: "Vitals", count: vitals.count,
+                      gradient: [.roseStart, .roseEnd], tab: 4)
             quickPill(icon: "doc.fill", label: "Notes", count: notes.count,
-                      gradient: [.purpleStart, .purpleEnd], tab: 4)
+                      gradient: [.purpleStart, .purpleEnd], tab: 5)
         }
     }
 
@@ -476,6 +491,52 @@ struct HomeView: View {
                 }
                 .padding(.horizontal, 20)
             }
+        }
+    }
+
+    // MARK: - Recent Vitals
+
+    var recentVitalsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Recent Vitals")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(Color.nearBlack)
+                Spacer()
+                if vitals.count > 3 {
+                    Button {
+                        selectedTab = 4
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    } label: {
+                        HStack(spacing: 3) {
+                            Text("See all")
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 10, weight: .semibold))
+                        }
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.roseStart)
+                    }
+                } else {
+                    Text("\(vitals.count) reading\(vitals.count == 1 ? "" : "s")")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.roseStart)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Color.roseStart.opacity(0.08))
+                        .clipShape(Capsule())
+                }
+            }
+            .padding(.horizontal, 20)
+
+            VStack(spacing: 10) {
+                ForEach(vitals.prefix(3)) { vital in
+                    Button { selectedVital = vital } label: {
+                        VitalCardRow(vital: vital)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 20)
         }
     }
 
