@@ -4,21 +4,49 @@
 //
 
 import SwiftUI
+import UIKit
+
+// MARK: - Adaptive Color Helper
+
+extension Color {
+    /// Creates a color that adapts between light and dark mode using hex strings.
+    /// Uses UIColor dynamic provider — NOT `UIColor(Color(hex:))` (see CLAUDE.md).
+    static func adaptive(light: String, dark: String) -> Color {
+        Color(uiColor: UIColor { traits in
+            let hex = traits.userInterfaceStyle == .dark ? dark : light
+            return uiColor(hex: hex)
+        })
+    }
+
+    /// Parses a hex string into a UIColor directly (no Color(hex:) round-trip).
+    private static func uiColor(hex: String) -> UIColor {
+        let h = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: h).scanHexInt64(&int)
+        let r = CGFloat((int >> 16) & 0xFF) / 255
+        let g = CGFloat((int >> 8) & 0xFF) / 255
+        let b = CGFloat(int & 0xFF) / 255
+        return UIColor(red: r, green: g, blue: b, alpha: 1)
+    }
+}
 
 // MARK: - Design Tokens
 
 extension Color {
-    // Background and surface
-    static let bg = Color(hex: "F6F2EC")          // warm cream
-    static let cardBg = Color.white
-    static let mutedBg = Color(hex: "E8E2D9")
+    // Background and surface (adaptive)
+    static let bg = Color.adaptive(light: "F6F2EC", dark: "1C1816")
+    static let cardBg = Color.adaptive(light: "FFFFFF", dark: "2A2520")
+    static let mutedBg = Color.adaptive(light: "E8E2D9", dark: "231F1B")
 
-    // Text
-    static let nearBlack = Color(hex: "1A1612")
-    static let mutedFg = Color(hex: "8C8279")
+    // Text (adaptive)
+    static let nearBlack = Color.adaptive(light: "1A1612", dark: "EBE6DF")
+    static let mutedFg = Color.adaptive(light: "8C8279", dark: "9E958C")
 
     // Primary
     static let primaryTeal = Color(hex: "0D7C66")
+
+    // Destructive (adaptive — brighter red in dark mode)
+    static let destructive = Color.adaptive(light: "DC2626", dark: "EF4444")
 
     // Gradient palette
     static let tealStart = Color(hex: "0D7C66")
