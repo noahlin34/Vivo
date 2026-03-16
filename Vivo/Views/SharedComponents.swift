@@ -270,7 +270,7 @@ struct MedicationCardRow: View {
                             Text(days == 0 ? "Refill needed" : "~\(days)d left")
                                 .font(.system(size: 10, weight: .medium))
                         }
-                        .foregroundStyle(days <= 3 ? Color(hex: "DC2626") : Color.amberStart)
+                        .foregroundStyle(days <= 3 ? Color.destructive : Color.amberStart)
                         .padding(.top, 1)
                     }
                 }

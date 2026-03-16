@@ -280,10 +280,10 @@ struct DoctorDetailSheet: View {
                             Text("Remove Doctor")
                         }
                         .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(Color(hex: "DC2626"))
+                        .foregroundStyle(Color.destructive)
                         .frame(maxWidth: .infinity)
                         .frame(height: 52)
-                        .background(Color(hex: "DC2626").opacity(0.08))
+                        .background(Color.destructive.opacity(0.08))
                         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     }
                     .padding(.horizontal, 20)
