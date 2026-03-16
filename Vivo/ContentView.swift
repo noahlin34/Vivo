@@ -12,7 +12,6 @@ struct ContentView: View {
     @State private var selectedTab: Int = 0
 
     init() {
-        // Hide the system tab bar — we render our own custom one
         UITabBar.appearance().isHidden = true
     }
 
@@ -22,21 +21,43 @@ struct ContentView: View {
             MedicationsView().tag(1)
             DoctorsView().tag(2)
             AppointmentsView().tag(3)
-            // Wrap tabs 4–5 in NavigationStack to override the implicit "More"
-            // navigation controller that UIKit creates for 6+ tabs. The explicit
-            // NavigationStack takes precedence, and we hide its bar.
-            NavigationStack {
-                VitalsView()
-                    .toolbar(.hidden, for: .navigationBar)
-            }.tag(4)
-            NavigationStack {
-                NotesView()
-                    .toolbar(.hidden, for: .navigationBar)
-            }.tag(5)
+            VitalsView().tag(4)
+            NotesView().tag(5)
         }
+        .background(MoreNavBarHider())
         .tint(Color.primaryTeal)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             CustomTabBar(selectedTab: $selectedTab)
+        }
+    }
+}
+
+// MARK: - Hide "More" Navigation Bar
+
+/// With 6+ tabs, UIKit's UITabBarController creates a "More" navigation
+/// controller for overflow tabs, producing a back button even though the
+/// system tab bar is hidden. This walks the responder chain to find the
+/// tab bar controller and hides that navigation bar directly.
+private struct MoreNavBarHider: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView(frame: .zero)
+        view.isUserInteractionEnabled = false
+        DispatchQueue.main.async { hideMoreBar(from: view) }
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        DispatchQueue.main.async { hideMoreBar(from: uiView) }
+    }
+
+    private func hideMoreBar(from view: UIView) {
+        var responder: UIResponder? = view
+        while let next = responder?.next {
+            if let tabController = next as? UITabBarController {
+                tabController.moreNavigationController.isNavigationBarHidden = true
+                return
+            }
+            responder = next
         }
     }
 }
@@ -83,7 +104,6 @@ struct CustomTabBar: View {
             .padding(.top, 6)
             .padding(.bottom, 8)
             .background {
-                // Frosted glass background that extends behind the home indicator
                 Color.cardBg.opacity(0.7)
                     .background(.ultraThinMaterial)
                     .overlay(alignment: .top) {
