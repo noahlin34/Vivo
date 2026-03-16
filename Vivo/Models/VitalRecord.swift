@@ -14,15 +14,17 @@ final class VitalRecord {
     var secondaryValue: Double? = nil
     var unit: String = ""
     var notes: String = ""
+    var source: String = "manual"
     var recordedAt: Date = Date()
     var createdAt: Date = Date()
 
-    init(type: String, value: Double, secondaryValue: Double? = nil, unit: String, notes: String = "", recordedAt: Date = Date()) {
+    init(type: String, value: Double, secondaryValue: Double? = nil, unit: String, notes: String = "", source: String = "manual", recordedAt: Date = Date()) {
         self.type = type
         self.value = value
         self.secondaryValue = secondaryValue
         self.unit = unit
         self.notes = notes
+        self.source = source
         self.recordedAt = recordedAt
         self.createdAt = Date()
     }
