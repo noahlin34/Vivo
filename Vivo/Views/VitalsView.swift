@@ -30,6 +30,15 @@ struct VitalsView: View {
         }
     }
 
+    private var subtitleText: String {
+        let total = vitals.count
+        let hkCount = vitals.filter { $0.source == "healthkit" }.count
+        if hkCount > 0 {
+            return "\(total) reading\(total == 1 ? "" : "s") (\(hkCount) from Apple Health)"
+        }
+        return "\(total) reading\(total == 1 ? "" : "s") logged"
+    }
+
     private var filteredVitals: [VitalRecord] {
         var result = vitals
         if let type = selectedType {
@@ -83,7 +92,7 @@ struct VitalsView: View {
                         Text("Vitals")
                             .font(.system(size: 28, weight: .regular, design: .serif))
                             .foregroundStyle(Color.nearBlack)
-                        Text("\(vitals.count) reading\(vitals.count == 1 ? "" : "s") logged")
+                        Text(subtitleText)
                             .font(.system(size: 13))
                             .foregroundStyle(Color.mutedFg)
                     }
