@@ -23,7 +23,6 @@ struct ContentView: View {
             default: HomeView(selectedTab: $selectedTab)
             }
         }
-        .animation(.easeInOut(duration: 0.15), value: selectedTab)
         .tint(Color.primaryTeal)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             CustomTabBar(selectedTab: $selectedTab)
