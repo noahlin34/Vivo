@@ -25,7 +25,7 @@ struct ContentView: View {
             VitalsView().tag(4)
             NotesView().tag(5)
         }
-        .tint(Color(hex: "0D7C66"))
+        .tint(Color.primaryTeal)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             CustomTabBar(selectedTab: $selectedTab)
         }
@@ -56,7 +56,7 @@ struct CustomTabBar: View {
         VStack(spacing: 0) {
             // Gradient fade above the bar (from bg to transparent going upward)
             LinearGradient(
-                colors: [Color(hex: "F6F2EC").opacity(0), Color(hex: "F6F2EC")],
+                colors: [Color.bg.opacity(0), Color.bg],
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -74,10 +74,10 @@ struct CustomTabBar: View {
             .padding(.bottom, 8)
             .background {
                 // Frosted glass background that extends behind the home indicator
-                Color.white.opacity(0.7)
+                Color.cardBg.opacity(0.7)
                     .background(.ultraThinMaterial)
                     .overlay(alignment: .top) {
-                        Color.white.opacity(0.3).frame(height: 0.5)
+                        Color.cardBg.opacity(0.3).frame(height: 0.5)
                     }
                     .shadow(color: Color(hex: "1A1612").opacity(0.06), radius: 12, x: 0, y: -4)
                     .ignoresSafeArea(edges: .bottom)
@@ -98,12 +98,12 @@ struct CustomTabBar: View {
                 ZStack {
                     // Active glow background
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(Color(hex: "0D7C66").opacity(isActive ? 0.1 : 0))
+                        .fill(Color.primaryTeal.opacity(isActive ? 0.1 : 0))
                         .frame(width: 36, height: 32)
 
                     Image(systemName: isActive ? item.activeIcon : item.icon)
                         .font(.system(size: 18, weight: isActive ? .medium : .light))
-                        .foregroundStyle(isActive ? Color(hex: "0D7C66") : Color(hex: "8C8279"))
+                        .foregroundStyle(isActive ? Color.primaryTeal : Color.mutedFg)
                 }
                 .frame(width: 38, height: 32)
 
@@ -111,7 +111,7 @@ struct CustomTabBar: View {
                 if isActive {
                     Text(item.label)
                         .font(.system(size: 9, weight: .medium))
-                        .foregroundStyle(Color(hex: "0D7C66"))
+                        .foregroundStyle(Color.primaryTeal)
                         .transition(.opacity.combined(with: .scale(scale: 0.8)))
                 }
             }
