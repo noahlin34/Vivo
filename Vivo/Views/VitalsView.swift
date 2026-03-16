@@ -199,6 +199,7 @@ struct VitalsView: View {
             }
         }
         .background(Color.bg)
+        .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $showAdd) { AddVitalView() }
         .sheet(item: $selected) { vital in
             VitalDetailSheet(vital: vital) {

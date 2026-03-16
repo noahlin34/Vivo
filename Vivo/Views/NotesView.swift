@@ -107,6 +107,7 @@ struct NotesView: View {
             }
         }
         .background(Color.bg)
+        .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $showAdd) { AddNoteView() }
         .sheet(item: $selected) { note in
             NoteDetailSheet(note: note) {
