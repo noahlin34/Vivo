@@ -11,17 +11,28 @@ import UIKit
 struct ContentView: View {
     @State private var selectedTab: Int = 0
 
+    init() {
+        // Hide the system tab bar — we render our own custom one
+        UITabBar.appearance().isHidden = true
+    }
+
     var body: some View {
-        Group {
-            switch selectedTab {
-            case 0: HomeView(selectedTab: $selectedTab)
-            case 1: MedicationsView()
-            case 2: DoctorsView()
-            case 3: AppointmentsView()
-            case 4: VitalsView()
-            case 5: NotesView()
-            default: HomeView(selectedTab: $selectedTab)
-            }
+        TabView(selection: $selectedTab) {
+            HomeView(selectedTab: $selectedTab).tag(0)
+            MedicationsView().tag(1)
+            DoctorsView().tag(2)
+            AppointmentsView().tag(3)
+            // Wrap tabs 4–5 in NavigationStack to override the implicit "More"
+            // navigation controller that UIKit creates for 6+ tabs. The explicit
+            // NavigationStack takes precedence, and we hide its bar.
+            NavigationStack {
+                VitalsView()
+                    .toolbar(.hidden, for: .navigationBar)
+            }.tag(4)
+            NavigationStack {
+                NotesView()
+                    .toolbar(.hidden, for: .navigationBar)
+            }.tag(5)
         }
         .tint(Color.primaryTeal)
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -51,8 +62,6 @@ private let tabItems: [TabItemDef] = [
 struct CustomTabBar: View {
     @Binding var selectedTab: Int
 
-    private let spring = Animation.spring(response: 0.3, dampingFraction: 0.7)
-
     var body: some View {
         VStack(spacing: 0) {
             // Gradient fade above the bar
@@ -74,6 +83,7 @@ struct CustomTabBar: View {
             .padding(.top, 6)
             .padding(.bottom, 8)
             .background {
+                // Frosted glass background that extends behind the home indicator
                 Color.cardBg.opacity(0.7)
                     .background(.ultraThinMaterial)
                     .overlay(alignment: .top) {
@@ -85,12 +95,12 @@ struct CustomTabBar: View {
         }
     }
 
+    @ViewBuilder
     private func tabButton(index: Int) -> some View {
         let item = tabItems[index]
         let isActive = selectedTab == index
 
-        return Button {
-            guard selectedTab != index else { return }
+        Button {
             selectedTab = index
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
         } label: {
@@ -107,19 +117,18 @@ struct CustomTabBar: View {
                 }
                 .frame(width: 38, height: 32)
 
-                // Label — always present, animated via opacity + scale
-                Text(item.label)
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundStyle(item.color)
-                    .scaleEffect(isActive ? 1 : 0.8)
-                    .opacity(isActive ? 1 : 0)
-                    .frame(height: isActive ? nil : 0)
-                    .clipped()
+                // Label only on active tab
+                if isActive {
+                    Text(item.label)
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundStyle(item.color)
+                        .transition(.opacity.combined(with: .scale(scale: 0.8)))
+                }
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 2)
             .offset(y: isActive ? -2 : 0)
-            .animation(spring, value: isActive)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: selectedTab)
         }
         .buttonStyle(.plain)
     }
