@@ -165,7 +165,7 @@ struct VitalsView: View {
                 if vitals.isEmpty {
                     emptyState
                 } else if filteredVitals.isEmpty {
-                    Text("No results")
+                    Text(searchText.isEmpty ? "No matching vitals" : "No results for \"\(searchText)\"")
                         .font(.system(size: 15))
                         .foregroundStyle(Color.mutedFg)
                         .frame(maxWidth: .infinity, alignment: .center)
@@ -418,7 +418,7 @@ struct AddVitalView: View {
                             HStack(spacing: 10) {
                                 Image(systemName: "calendar.clock")
                                     .font(.system(size: 14))
-                                    .foregroundStyle(Color.primaryTeal)
+                                    .foregroundStyle(Color.roseStart)
                                     .frame(width: 20)
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("Date & Time")
@@ -427,7 +427,7 @@ struct AddVitalView: View {
                                     DatePicker("", selection: $recordedAt)
                                         .labelsHidden()
                                         .datePickerStyle(.compact)
-                                        .tint(Color.primaryTeal)
+                                        .tint(Color.roseStart)
                                 }
                                 Spacer()
                             }
@@ -436,7 +436,7 @@ struct AddVitalView: View {
                             .background(Color.mutedBg.opacity(0.5))
                             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                         }
-                        FormSection(title: "Notes") {
+                        FormSection(title: "Notes", dotColor: Color.roseStart) {
                             FormTextField(label: "Notes", text: $notes, placeholder: "Optional", icon: "note.text")
                         }
                     }
@@ -587,11 +587,9 @@ struct VitalDetailSheet: View {
             .sheet(isPresented: $showEdit) {
                 EditVitalView(vital: vital)
             }
-            }
-            .background(Color.cardBg)
-            .toolbar(.hidden, for: .navigationBar)
-            .presentationDetents([.medium, .large])
-            .presentationCornerRadius(24)
+        }
+        .presentationDetents([.medium, .large])
+        .presentationCornerRadius(24)
     }
 
     private var trendChart: some View {
@@ -772,7 +770,7 @@ struct EditVitalView: View {
                             HStack(spacing: 10) {
                                 Image(systemName: "calendar.clock")
                                     .font(.system(size: 14))
-                                    .foregroundStyle(Color.primaryTeal)
+                                    .foregroundStyle(Color.roseStart)
                                     .frame(width: 20)
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("Date & Time")
@@ -781,7 +779,7 @@ struct EditVitalView: View {
                                     DatePicker("", selection: $recordedAt)
                                         .labelsHidden()
                                         .datePickerStyle(.compact)
-                                        .tint(Color.primaryTeal)
+                                        .tint(Color.roseStart)
                                 }
                                 Spacer()
                             }
@@ -790,7 +788,7 @@ struct EditVitalView: View {
                             .background(Color.mutedBg.opacity(0.5))
                             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                         }
-                        FormSection(title: "Notes") {
+                        FormSection(title: "Notes", dotColor: Color.roseStart) {
                             FormTextField(label: "Notes", text: $notes, placeholder: "Optional", icon: "note.text")
                         }
                     }
