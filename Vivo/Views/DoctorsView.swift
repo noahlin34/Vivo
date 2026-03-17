@@ -159,7 +159,11 @@ struct DoctorDetailSheet: View {
         let initial = doctor.name.split(separator: " ").last?.first.map(String.init) ?? "D"
 
         return NavigationStack {
-            ScrollView {
+            VStack(spacing: 0) {
+                DetailToolbar(title: "Doctor Details",
+                              onDone: { dismiss() },
+                              onEdit: { showEdit = true })
+                ScrollView {
                 VStack(spacing: 0) {
                     // Header
                     HStack(spacing: 16) {
@@ -291,17 +295,8 @@ struct DoctorDetailSheet: View {
                     .padding(.bottom, 32)
                 }
             }
-            .background(Color.cardBg)
-            .navigationTitle("Doctor Details")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                }
-                ToolbarItem(placement: .primaryAction) {
-                    Button("Edit") { showEdit = true }
-                }
             }
+            .background(Color.cardBg)
             .sheet(isPresented: $showEdit) {
                 EditDoctorView(doctor: doctor)
             }
@@ -312,10 +307,12 @@ struct DoctorDetailSheet: View {
                     selectedAppt = nil
                 }
             }
+            }
+            .background(Color.cardBg)
+            .toolbar(.hidden, for: .navigationBar)
+            .presentationDetents([.medium, .large])
+            .presentationCornerRadius(24)
         }
-        .presentationDetents([.medium, .large])
-        .presentationCornerRadius(24)
-    }
 
     func apptRow(_ appt: Appointment, isPast: Bool) -> some View {
         HStack(spacing: 12) {
@@ -398,41 +395,36 @@ struct AddDoctorView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    FormHeader(
-                        icon: "stethoscope",
-                        title: "Add Doctor",
-                        subtitle: "Add a member to your care team",
-                        gradient: [.amberStart, .amberEnd]
-                    )
-                    FormSection(title: "Doctor Info", dotColor: Color.amberStart) {
-                        FormTextField(label: "Full Name", text: $name, placeholder: "Dr. Jane Smith", icon: "person.fill")
-                        FormTextField(label: "Specialty", text: $specialty, placeholder: "e.g. Cardiologist", icon: "stethoscope")
+            VStack(spacing: 0) {
+                FormToolbar(title: "Add Doctor", gradient: [Color.amberStart, Color.amberEnd],
+                            saveDisabled: name.trimmingCharacters(in: .whitespaces).isEmpty,
+                            onCancel: { dismiss() }, onSave: { save() })
+                ScrollView {
+                    VStack(spacing: 20) {
+                        FormHeader(
+                            icon: "stethoscope",
+                            title: "Add Doctor",
+                            subtitle: "Add a member to your care team",
+                            gradient: [.amberStart, .amberEnd]
+                        )
+                        FormSection(title: "Doctor Info", dotColor: Color.amberStart) {
+                            FormTextField(label: "Full Name", text: $name, placeholder: "Dr. Jane Smith", icon: "person.fill")
+                            FormTextField(label: "Specialty", text: $specialty, placeholder: "e.g. Cardiologist", icon: "stethoscope")
+                        }
+                        FormSection(title: "Contact", dotColor: Color.amberStart) {
+                            FormTextField(label: "Phone", text: $phone, placeholder: "Optional", icon: "phone.fill", keyboardType: .phonePad)
+                            FormTextField(label: "Email", text: $email, placeholder: "Optional", icon: "envelope.fill", keyboardType: .emailAddress)
+                            FormTextField(label: "Address", text: $address, placeholder: "Optional", icon: "mappin.circle.fill")
+                        }
                     }
-                    FormSection(title: "Contact", dotColor: Color.amberStart) {
-                        FormTextField(label: "Phone", text: $phone, placeholder: "Optional", icon: "phone.fill", keyboardType: .phonePad)
-                        FormTextField(label: "Email", text: $email, placeholder: "Optional", icon: "envelope.fill", keyboardType: .emailAddress)
-                        FormTextField(label: "Address", text: $address, placeholder: "Optional", icon: "mappin.circle.fill")
-                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+                    .padding(.bottom, 40)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
-                .padding(.bottom, 40)
+                .scrollDismissesKeyboard(.interactively)
             }
             .background(Color.bg)
-            .scrollDismissesKeyboard(.interactively)
-            .navigationTitle("Add Doctor")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }
-                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
         }
         .presentationCornerRadius(24)
     }
@@ -472,35 +464,30 @@ struct EditDoctorView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    FormSection(title: "Doctor Info", dotColor: Color.amberStart) {
-                        FormTextField(label: "Full Name", text: $name, placeholder: "Dr. Jane Smith", icon: "person.fill")
-                        FormTextField(label: "Specialty", text: $specialty, placeholder: "e.g. Cardiologist", icon: "stethoscope")
+            VStack(spacing: 0) {
+                FormToolbar(title: "Edit Doctor", gradient: [Color.amberStart, Color.amberEnd],
+                            saveDisabled: name.trimmingCharacters(in: .whitespaces).isEmpty,
+                            onCancel: { dismiss() }, onSave: { save() })
+                ScrollView {
+                    VStack(spacing: 20) {
+                        FormSection(title: "Doctor Info", dotColor: Color.amberStart) {
+                            FormTextField(label: "Full Name", text: $name, placeholder: "Dr. Jane Smith", icon: "person.fill")
+                            FormTextField(label: "Specialty", text: $specialty, placeholder: "e.g. Cardiologist", icon: "stethoscope")
+                        }
+                        FormSection(title: "Contact", dotColor: Color.amberStart) {
+                            FormTextField(label: "Phone", text: $phone, placeholder: "Optional", icon: "phone.fill", keyboardType: .phonePad)
+                            FormTextField(label: "Email", text: $email, placeholder: "Optional", icon: "envelope.fill", keyboardType: .emailAddress)
+                            FormTextField(label: "Address", text: $address, placeholder: "Optional", icon: "mappin.circle.fill")
+                        }
                     }
-                    FormSection(title: "Contact", dotColor: Color.amberStart) {
-                        FormTextField(label: "Phone", text: $phone, placeholder: "Optional", icon: "phone.fill", keyboardType: .phonePad)
-                        FormTextField(label: "Email", text: $email, placeholder: "Optional", icon: "envelope.fill", keyboardType: .emailAddress)
-                        FormTextField(label: "Address", text: $address, placeholder: "Optional", icon: "mappin.circle.fill")
-                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 16)
+                    .padding(.bottom, 40)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 16)
-                .padding(.bottom, 40)
+                .scrollDismissesKeyboard(.interactively)
             }
             .background(Color.bg)
-            .scrollDismissesKeyboard(.interactively)
-            .navigationTitle("Edit Doctor")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }
-                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
         }
         .presentationCornerRadius(24)
     }
