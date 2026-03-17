@@ -29,9 +29,6 @@ final class HealthKitService {
 
     private let readTypes: Set<HKObjectType> = {
         var types = Set<HKObjectType>()
-        if let bp = HKCorrelationType.correlationType(forIdentifier: .bloodPressure) {
-            types.insert(bp)
-        }
         if let systolic = HKQuantityType.quantityType(forIdentifier: .bloodPressureSystolic) {
             types.insert(systolic)
         }
