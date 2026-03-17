@@ -16,6 +16,8 @@ struct HomeView: View {
     @Query(sort: \HealthNote.createdAt, order: .reverse) private var notes: [HealthNote]
     @Query(sort: \VitalRecord.recordedAt, order: .reverse) private var vitals: [VitalRecord]
 
+    @Environment(SyncMonitor.self) private var syncMonitor
+    @State private var showSyncPopover: Bool = false
     @State private var topSafeArea: CGFloat = 0
     @State private var selectedMed: Medication? = nil
     @State private var selectedAppt: Appointment? = nil
@@ -108,6 +110,8 @@ struct HomeView: View {
                     Text(Date(), format: .dateTime.weekday(.wide).month(.wide).day())
                         .font(.system(size: 13))
                         .foregroundStyle(.white.opacity(0.7))
+                    Spacer()
+                    syncIconButton
                 }
                 .padding(.top, topSafeArea + 16)
 
@@ -236,6 +240,47 @@ struct HomeView: View {
         .background(.white.opacity(0.15))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: - Sync Icon
+
+    private var syncIsUnavailable: Bool {
+        if case .unavailable = syncMonitor.state { return true }
+        return false
+    }
+
+    @ViewBuilder
+    private var syncIconButton: some View {
+        if !syncIsUnavailable {
+            Button { showSyncPopover = true } label: { syncIconImage }
+                .popover(isPresented: $showSyncPopover) { SyncPopoverContent() }
+        }
+    }
+
+    @ViewBuilder
+    private var syncIconImage: some View {
+        switch syncMonitor.state {
+        case .idle:
+            Image(systemName: "icloud.fill")
+                .font(.system(size: 14))
+                .foregroundStyle(.white.opacity(0.6))
+        case .synced(_):
+            Image(systemName: "icloud.fill")
+                .font(.system(size: 14))
+                .foregroundStyle(.white.opacity(0.6))
+        case .syncing:
+            SyncSpinnerIcon()
+        case .error(_):
+            Image(systemName: "exclamationmark.icloud.fill")
+                .font(.system(size: 14))
+                .foregroundStyle(Color.amberStart)
+        case .noAccount:
+            Image(systemName: "xmark.icloud.fill")
+                .font(.system(size: 14))
+                .foregroundStyle(Color.amberStart)
+        case .unavailable:
+            EmptyView()
+        }
     }
 
     // MARK: - Main Content
@@ -613,4 +658,136 @@ struct HomeView: View {
         }
     }
 
+}
+
+// MARK: - Sync Support Views
+
+private struct SyncSpinnerIcon: View {
+    var size: CGFloat = 14
+    var color: Color = .white
+    @State private var angle: Double = 0
+
+    var body: some View {
+        Image(systemName: "arrow.triangle.2.circlepath")
+            .font(.system(size: size))
+            .foregroundStyle(color)
+            .rotationEffect(.degrees(angle))
+            .onAppear {
+                withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
+                    angle = 360
+                }
+            }
+    }
+}
+
+private struct SyncPopoverContent: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(SyncMonitor.self) private var syncMonitor
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 12) {
+                statusIcon
+                    .frame(width: 22, height: 22)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(statusTitle)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.nearBlack)
+                    Text(statusSubtitle)
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.mutedFg)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer()
+            }
+
+            if showSyncButton {
+                Button {
+                    try? modelContext.save()
+                } label: {
+                    Text(syncButtonLabel)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            LinearGradient(
+                                colors: [Color.tealStart, Color.tealEnd],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                .disabled(syncMonitor.isSyncing)
+                .opacity(syncMonitor.isSyncing ? 0.5 : 1)
+            }
+        }
+        .padding(20)
+        .frame(minWidth: 240)
+        .background(Color.cardBg)
+    }
+
+    @ViewBuilder
+    private var statusIcon: some View {
+        switch syncMonitor.state {
+        case .idle:
+            Image(systemName: "icloud.fill")
+                .font(.system(size: 18))
+                .foregroundStyle(Color.primaryTeal)
+        case .synced(_):
+            Image(systemName: "icloud.fill")
+                .font(.system(size: 18))
+                .foregroundStyle(Color.primaryTeal)
+        case .syncing:
+            SyncSpinnerIcon(size: 18, color: Color.primaryTeal)
+        case .error(_):
+            Image(systemName: "exclamationmark.icloud.fill")
+                .font(.system(size: 18))
+                .foregroundStyle(Color.amberStart)
+        case .noAccount:
+            Image(systemName: "xmark.icloud.fill")
+                .font(.system(size: 18))
+                .foregroundStyle(Color.amberStart)
+        case .unavailable:
+            EmptyView()
+        }
+    }
+
+    private var statusTitle: String {
+        switch syncMonitor.state {
+        case .idle: return "iCloud Sync"
+        case .syncing: return "Syncing to iCloud..."
+        case .synced(_): return "Synced to iCloud"
+        case .error(_): return "Sync Error"
+        case .noAccount: return "iCloud Unavailable"
+        case .unavailable: return ""
+        }
+    }
+
+    private var statusSubtitle: String {
+        switch syncMonitor.state {
+        case .idle: return "Waiting for sync"
+        case .syncing: return "Uploading your data"
+        case .synced(let date):
+            let formatter = RelativeDateTimeFormatter()
+            formatter.unitsStyle = .short
+            return "Last synced \(formatter.localizedString(for: date, relativeTo: Date()))"
+        case .error(let message): return message
+        case .noAccount: return "Sign in to iCloud in Settings to sync your data"
+        case .unavailable: return ""
+        }
+    }
+
+    private var showSyncButton: Bool {
+        switch syncMonitor.state {
+        case .noAccount, .unavailable: return false
+        default: return true
+        }
+    }
+
+    private var syncButtonLabel: String {
+        if case .error = syncMonitor.state { return "Try Again" }
+        return "Sync Now"
+    }
 }
