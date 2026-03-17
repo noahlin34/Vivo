@@ -166,60 +166,61 @@ struct AppointmentDetailSheet: View {
         NavigationStack {
             VStack(spacing: 0) {
                 DetailToolbar(title: "Appointment", onDone: { dismiss() }, onEdit: { showEdit = true })
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(appointment.title)
-                        .font(.system(size: 22, weight: .medium))
-                        .foregroundStyle(Color.nearBlack)
-                    if let linkedDoctor = appointment.doctor {
-                        Button { showLinkedDoctor = true } label: {
-                            HStack(spacing: 4) {
-                                Text(linkedDoctor.name)
-                                    .font(.system(size: 14))
-                                    .foregroundStyle(Color.primaryTeal)
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 10, weight: .semibold))
-                                    .foregroundStyle(Color.primaryTeal.opacity(0.5))
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(appointment.title)
+                            .font(.system(size: 22, weight: .medium))
+                            .foregroundStyle(Color.nearBlack)
+                        if let linkedDoctor = appointment.doctor {
+                            Button { showLinkedDoctor = true } label: {
+                                HStack(spacing: 4) {
+                                    Text(linkedDoctor.name)
+                                        .font(.system(size: 14))
+                                        .foregroundStyle(Color.primaryTeal)
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 10, weight: .semibold))
+                                        .foregroundStyle(Color.primaryTeal.opacity(0.5))
+                                }
                             }
-                        }
-                        .buttonStyle(.plain)
-                    } else if !appointment.doctorName.isEmpty {
-                        Text(appointment.doctorName)
-                            .font(.system(size: 14))
-                            .foregroundStyle(Color.primaryTeal)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(20)
-
-                VStack(spacing: 10) {
-                    detailRow(icon: "calendar", iconColor: Color.cyanStart,
-                              label: "Date",
-                              value: appointment.date.formatted(.dateTime.weekday(.wide).month(.wide).day().year()))
-
-                    detailRow(icon: "clock", iconColor: Color.primaryTeal,
-                              label: "Time", value: appointment.date.formatted(.dateTime.hour().minute()))
-                    if !appointment.location.isEmpty {
-                        detailRow(icon: "mappin", iconColor: Color.amberStart,
-                                  label: "Location", value: appointment.location)
-                    }
-                    if !appointment.notes.isEmpty {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Notes")
-                                .font(.system(size: 11))
-                                .foregroundStyle(Color.mutedFg)
-                            Text(appointment.notes)
+                            .buttonStyle(.plain)
+                        } else if !appointment.doctorName.isEmpty {
+                            Text(appointment.doctorName)
                                 .font(.system(size: 14))
-                                .foregroundStyle(Color.nearBlack)
+                                .foregroundStyle(Color.primaryTeal)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(14)
-                        .background(Color.bg)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                     }
-                }
-                .padding(.horizontal, 20)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(20)
 
-                Spacer()
+                    VStack(spacing: 10) {
+                        detailRow(icon: "calendar", iconColor: Color.cyanStart,
+                                  label: "Date",
+                                  value: appointment.date.formatted(.dateTime.weekday(.wide).month(.wide).day().year()))
+
+                        detailRow(icon: "clock", iconColor: Color.primaryTeal,
+                                  label: "Time", value: appointment.date.formatted(.dateTime.hour().minute()))
+                        if !appointment.location.isEmpty {
+                            detailRow(icon: "mappin", iconColor: Color.amberStart,
+                                      label: "Location", value: appointment.location)
+                        }
+                        if !appointment.notes.isEmpty {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Notes")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(Color.mutedFg)
+                                Text(appointment.notes)
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(Color.nearBlack)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(14)
+                            .background(Color.bg)
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 16)
+                }
 
                 Button {
                     onDelete()
