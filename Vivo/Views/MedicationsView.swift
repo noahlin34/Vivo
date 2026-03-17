@@ -136,13 +136,6 @@ struct MedicationsView: View {
                                             MedicationCardRow(medication: med, onToggle: { toggleTaken(med) })
                                         }
                                         .buttonStyle(.plain)
-                                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                            Button(role: .destructive) {
-                                                medicationToDelete = med
-                                            } label: {
-                                                Label("Delete", systemImage: "trash")
-                                            }
-                                        }
                                     }
                                 }
                                 .animation(.spring(response: 0.4, dampingFraction: 0.75), value: meds.map(\.isTakenToday))

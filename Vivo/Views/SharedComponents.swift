@@ -549,11 +549,6 @@ struct NoteCard: View {
         .background(Color.cardBg)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .warmShadow()
-        .swipeActions(edge: .trailing) {
-            Button(role: .destructive, action: onDelete) {
-                Label("Delete", systemImage: "trash")
-            }
-        }
         .contextMenu {
             Button(role: .destructive, action: onDelete) {
                 Label("Delete", systemImage: "trash")

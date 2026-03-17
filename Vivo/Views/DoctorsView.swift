@@ -68,13 +68,6 @@ struct DoctorsView: View {
                                 DoctorCardRow(doctor: doc)
                             }
                             .buttonStyle(.plain)
-                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                Button(role: .destructive) {
-                                    doctorToDelete = doc
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-                            }
                         }
                     }
                     .padding(.horizontal, 20)
@@ -297,6 +290,7 @@ struct DoctorDetailSheet: View {
             }
             }
             .background(Color.cardBg)
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showEdit) {
                 EditDoctorView(doctor: doctor)
             }
@@ -307,11 +301,9 @@ struct DoctorDetailSheet: View {
                     selectedAppt = nil
                 }
             }
-            }
-            .background(Color.cardBg)
-            .toolbar(.hidden, for: .navigationBar)
-            .presentationDetents([.medium, .large])
-            .presentationCornerRadius(24)
+        }
+        .presentationDetents([.medium, .large])
+        .presentationCornerRadius(24)
         }
 
     func apptRow(_ appt: Appointment, isPast: Bool) -> some View {
