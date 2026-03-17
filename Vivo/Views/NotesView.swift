@@ -257,41 +257,46 @@ struct EditNoteView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Note Info") {
-                    TextField("Title", text: $title)
-                }
-                Section("Category") {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 8) {
-                        ForEach(categories, id: \.self) { cat in
-                            let style = CategoryStyle.forCategory(cat)
-                            let isSelected = category == cat
-                            Button { category = cat } label: {
-                                Text(cat)
-                                    .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
-                                    .foregroundStyle(isSelected ? .white : Color.mutedFg)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 8)
-                                    .frame(maxWidth: .infinity)
-                                    .background {
-                                        if isSelected {
-                                            LinearGradient(colors: style.gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
-                                        } else {
-                                            Color.mutedBg
+            ScrollView {
+                VStack(spacing: 20) {
+                    FormSection(title: "Info", dotColor: Color.purpleStart) {
+                        FormTextField(label: "Title", text: $title, placeholder: "Note title", icon: "note.text")
+                    }
+                    FormSection(title: "Category", dotColor: Color.purpleStart) {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 8) {
+                            ForEach(categories, id: \.self) { cat in
+                                let style = CategoryStyle.forCategory(cat)
+                                let isSelected = category == cat
+                                Button { category = cat } label: {
+                                    Text(cat)
+                                        .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                                        .foregroundStyle(isSelected ? .white : Color.mutedFg)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 8)
+                                        .frame(maxWidth: .infinity)
+                                        .background {
+                                            if isSelected {
+                                                LinearGradient(colors: style.gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
+                                            } else {
+                                                Color.mutedBg
+                                            }
                                         }
-                                    }
-                                    .clipShape(Capsule())
+                                        .clipShape(Capsule())
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
                     }
-                    .padding(.vertical, 4)
+                    FormSection(title: "Content", dotColor: Color.purpleStart) {
+                        FormTextEditor(label: "Content", text: $content, icon: "text.alignleft")
+                    }
                 }
-                Section("Content") {
-                    TextEditor(text: $content)
-                        .frame(minHeight: 120)
-                }
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
+                .padding(.bottom, 40)
             }
+            .background(Color.bg)
+            .scrollDismissesKeyboard(.interactively)
             .navigationTitle("Edit Note")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -329,55 +334,52 @@ struct AddNoteView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    HStack(spacing: 8) {
-                        Image(systemName: "sparkles")
-                            .foregroundStyle(.white)
-                            .frame(width: 32, height: 32)
-                            .background(LinearGradient(colors: [.purpleStart, .purpleEnd], startPoint: .topLeading, endPoint: .bottomTrailing))
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        Text("New Note")
-                            .font(.headline)
+            ScrollView {
+                VStack(spacing: 20) {
+                    FormHeader(
+                        icon: "note.text",
+                        title: "New Note",
+                        subtitle: "Capture a health observation",
+                        gradient: [.purpleStart, .purpleEnd]
+                    )
+                    FormSection(title: "Info", dotColor: Color.purpleStart) {
+                        FormTextField(label: "Title", text: $title, placeholder: "Note title", icon: "note.text")
                     }
-                }
-
-                Section("Note Info") {
-                    TextField("Title", text: $title)
-                }
-
-                Section("Category") {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 8) {
-                        ForEach(categories, id: \.self) { cat in
-                            let style = CategoryStyle.forCategory(cat)
-                            let isSelected = category == cat
-                            Button { category = cat } label: {
-                                Text(cat)
-                                    .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
-                                    .foregroundStyle(isSelected ? .white : Color.mutedFg)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 8)
-                                    .frame(maxWidth: .infinity)
-                                    .background {
-                                        if isSelected {
-                                            LinearGradient(colors: style.gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
-                                        } else {
-                                            Color.mutedBg
+                    FormSection(title: "Category", dotColor: Color.purpleStart) {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 8) {
+                            ForEach(categories, id: \.self) { cat in
+                                let style = CategoryStyle.forCategory(cat)
+                                let isSelected = category == cat
+                                Button { category = cat } label: {
+                                    Text(cat)
+                                        .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                                        .foregroundStyle(isSelected ? .white : Color.mutedFg)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 8)
+                                        .frame(maxWidth: .infinity)
+                                        .background {
+                                            if isSelected {
+                                                LinearGradient(colors: style.gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
+                                            } else {
+                                                Color.mutedBg
+                                            }
                                         }
-                                    }
-                                    .clipShape(Capsule())
+                                        .clipShape(Capsule())
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
                     }
-                    .padding(.vertical, 4)
+                    FormSection(title: "Content", dotColor: Color.purpleStart) {
+                        FormTextEditor(label: "Content", text: $content, icon: "text.alignleft")
+                    }
                 }
-
-                Section("Content") {
-                    TextEditor(text: $content)
-                        .frame(minHeight: 120)
-                }
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
+                .padding(.bottom, 40)
             }
+            .background(Color.bg)
+            .scrollDismissesKeyboard(.interactively)
             .navigationTitle("New Note")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
