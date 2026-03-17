@@ -557,3 +557,223 @@ struct WarmCard<Content: View>: View {
         .warmShadow()
     }
 }
+
+// MARK: - Form Components
+
+struct FormHeader: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+    let gradient: [Color]
+
+    var body: some View {
+        VStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(.white.opacity(0.2))
+                    .frame(width: 56, height: 56)
+                Image(systemName: icon)
+                    .font(.system(size: 26))
+                    .foregroundStyle(.white)
+            }
+            VStack(spacing: 4) {
+                Text(title)
+                    .font(.system(size: 20, weight: .regular, design: .serif))
+                    .foregroundStyle(.white)
+                Text(subtitle)
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.7))
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 28)
+        .background(
+            LinearGradient(colors: gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .warmShadowLg()
+    }
+}
+
+struct FormTextField: View {
+    let label: String
+    @Binding var text: String
+    var placeholder: String = ""
+    var icon: String? = nil
+    var keyboardType: UIKeyboardType = .default
+
+    var body: some View {
+        HStack(spacing: 10) {
+            if let icon = icon {
+                Image(systemName: icon)
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color.primaryTeal)
+                    .frame(width: 20)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color.mutedFg)
+                TextField(placeholder.isEmpty ? label : placeholder, text: $text)
+                    .font(.system(size: 15))
+                    .foregroundStyle(Color.nearBlack)
+                    .keyboardType(keyboardType)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(Color.mutedBg.opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+}
+
+struct FormTextEditor: View {
+    let label: String
+    @Binding var text: String
+    var icon: String? = nil
+    var minHeight: CGFloat = 120
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            if let icon = icon {
+                Image(systemName: icon)
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color.primaryTeal)
+                    .frame(width: 20)
+                    .padding(.top, 2)
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(label)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color.mutedFg)
+                TextEditor(text: $text)
+                    .font(.system(size: 15))
+                    .foregroundStyle(Color.nearBlack)
+                    .scrollContentBackground(.hidden)
+                    .frame(minHeight: minHeight)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(Color.mutedBg.opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+}
+
+struct FormSection<Content: View>: View {
+    let title: String?
+    let dotColor: Color
+    @ViewBuilder let content: Content
+
+    init(title: String? = nil, dotColor: Color = Color.primaryTeal, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.dotColor = dotColor
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let title = title {
+                SectionLabel(title: title, dotColor: dotColor)
+            }
+            VStack(spacing: 12) {
+                content
+            }
+            .padding(16)
+            .background(Color.cardBg)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .warmShadow()
+        }
+    }
+}
+
+struct FormColorPicker: View {
+    @Binding var selection: Int
+    let colors: [String]
+    let names: [String]
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(0..<colors.count, id: \.self) { i in
+                Button {
+                    selection = i
+                } label: {
+                    VStack(spacing: 6) {
+                        ZStack {
+                            if selection == i {
+                                Circle()
+                                    .strokeBorder(Color(hex: colors[i]), lineWidth: 2)
+                                    .frame(width: 44, height: 44)
+                            }
+                            Circle()
+                                .fill(Color(hex: colors[i]))
+                                .frame(width: 36, height: 36)
+                            if selection == i {
+                                Circle()
+                                    .strokeBorder(.white, lineWidth: 3)
+                                    .frame(width: 36, height: 36)
+                            }
+                        }
+                        Text(names[i])
+                            .font(.system(size: 9))
+                            .foregroundStyle(Color.mutedFg)
+                    }
+                }
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+struct FormChipPicker<T: Hashable>: View {
+    @Binding var selection: T
+    let options: [T]
+    let labels: (T) -> String
+    let gradient: [Color]
+    let icons: ((T) -> String)?
+
+    init(selection: Binding<T>, options: [T], labels: @escaping (T) -> String,
+         gradient: [Color], icons: ((T) -> String)? = nil) {
+        self._selection = selection
+        self.options = options
+        self.labels = labels
+        self.gradient = gradient
+        self.icons = icons
+    }
+
+    var body: some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 8) {
+            ForEach(options, id: \.self) { option in
+                let isSelected = selection == option
+                Button {
+                    selection = option
+                } label: {
+                    HStack(spacing: 5) {
+                        if let icons = icons {
+                            Image(systemName: icons(option))
+                                .font(.system(size: 12))
+                                .foregroundStyle(isSelected ? .white : Color.mutedFg)
+                        }
+                        Text(labels(option))
+                            .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                            .foregroundStyle(isSelected ? .white : Color.mutedFg)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity)
+                    .background {
+                        if isSelected {
+                            LinearGradient(colors: gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
+                        } else {
+                            Color.mutedBg
+                        }
+                    }
+                    .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
