@@ -165,6 +165,7 @@ struct AppointmentDetailSheet: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                DetailToolbar(title: "Appointment", onDone: { dismiss() }, onEdit: { showEdit = true })
                 VStack(alignment: .leading, spacing: 4) {
                     Text(appointment.title)
                         .font(.system(size: 22, weight: .medium))
@@ -239,16 +240,7 @@ struct AppointmentDetailSheet: View {
                 .padding(.bottom, 24)
             }
             .background(Color.cardBg)
-            .navigationTitle("Appointment")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                }
-                ToolbarItem(placement: .primaryAction) {
-                    Button("Edit") { showEdit = true }
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showEdit) {
                 EditAppointmentView(appointment: appointment)
             }
@@ -303,44 +295,39 @@ struct AddAppointmentView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    FormHeader(
-                        icon: "calendar",
-                        title: "New Appointment",
-                        subtitle: "Schedule your next visit",
-                        gradient: [.amberStart, .amberEnd]
-                    )
-                    FormSection(title: "Info", dotColor: Color.amberStart) {
-                        FormTextField(label: "Title", text: $title, placeholder: "e.g. Annual Physical", icon: "calendar")
-                        doctorRow
+            VStack(spacing: 0) {
+                FormToolbar(title: "New Appointment", gradient: [Color.amberStart, Color.amberEnd],
+                            saveDisabled: title.trimmingCharacters(in: .whitespaces).isEmpty,
+                            onCancel: { dismiss() }, onSave: { save() })
+                ScrollView {
+                    VStack(spacing: 20) {
+                        FormHeader(
+                            icon: "calendar",
+                            title: "New Appointment",
+                            subtitle: "Schedule your next visit",
+                            gradient: [.amberStart, .amberEnd]
+                        )
+                        FormSection(title: "Info", dotColor: Color.amberStart) {
+                            FormTextField(label: "Title", text: $title, placeholder: "e.g. Annual Physical", icon: "calendar")
+                            doctorRow
+                        }
+                        FormSection(title: "Date & Time", dotColor: Color.amberStart) {
+                            datePickerRow(label: "Date", icon: "calendar", components: .date)
+                            datePickerRow(label: "Time", icon: "clock", components: .hourAndMinute)
+                        }
+                        FormSection(title: "Details", dotColor: Color.amberStart) {
+                            FormTextField(label: "Location", text: $location, placeholder: "Optional", icon: "mappin.circle.fill")
+                            FormTextField(label: "Notes", text: $notes, placeholder: "Optional", icon: "note.text")
+                        }
                     }
-                    FormSection(title: "Date & Time", dotColor: Color.amberStart) {
-                        datePickerRow(label: "Date", icon: "calendar", components: .date)
-                        datePickerRow(label: "Time", icon: "clock", components: .hourAndMinute)
-                    }
-                    FormSection(title: "Details", dotColor: Color.amberStart) {
-                        FormTextField(label: "Location", text: $location, placeholder: "Optional", icon: "mappin.circle.fill")
-                        FormTextField(label: "Notes", text: $notes, placeholder: "Optional", icon: "note.text")
-                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+                    .padding(.bottom, 40)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
-                .padding(.bottom, 40)
+                .scrollDismissesKeyboard(.interactively)
             }
             .background(Color.bg)
-            .scrollDismissesKeyboard(.interactively)
-            .navigationTitle("New Appointment")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }
-                        .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
         }
         .presentationCornerRadius(24)
     }
@@ -451,38 +438,33 @@ struct EditAppointmentView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    FormSection(title: "Info", dotColor: Color.amberStart) {
-                        FormTextField(label: "Title", text: $title, placeholder: "e.g. Annual Physical", icon: "calendar")
-                        doctorRow
+            VStack(spacing: 0) {
+                FormToolbar(title: "Edit Appointment", gradient: [Color.amberStart, Color.amberEnd],
+                            saveDisabled: title.trimmingCharacters(in: .whitespaces).isEmpty,
+                            onCancel: { dismiss() }, onSave: { save() })
+                ScrollView {
+                    VStack(spacing: 20) {
+                        FormSection(title: "Info", dotColor: Color.amberStart) {
+                            FormTextField(label: "Title", text: $title, placeholder: "e.g. Annual Physical", icon: "calendar")
+                            doctorRow
+                        }
+                        FormSection(title: "Date & Time", dotColor: Color.amberStart) {
+                            datePickerRow(label: "Date", icon: "calendar", components: .date)
+                            datePickerRow(label: "Time", icon: "clock", components: .hourAndMinute)
+                        }
+                        FormSection(title: "Details", dotColor: Color.amberStart) {
+                            FormTextField(label: "Location", text: $location, placeholder: "Optional", icon: "mappin.circle.fill")
+                            FormTextField(label: "Notes", text: $notes, placeholder: "Optional", icon: "note.text")
+                        }
                     }
-                    FormSection(title: "Date & Time", dotColor: Color.amberStart) {
-                        datePickerRow(label: "Date", icon: "calendar", components: .date)
-                        datePickerRow(label: "Time", icon: "clock", components: .hourAndMinute)
-                    }
-                    FormSection(title: "Details", dotColor: Color.amberStart) {
-                        FormTextField(label: "Location", text: $location, placeholder: "Optional", icon: "mappin.circle.fill")
-                        FormTextField(label: "Notes", text: $notes, placeholder: "Optional", icon: "note.text")
-                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 16)
+                    .padding(.bottom, 40)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 16)
-                .padding(.bottom, 40)
+                .scrollDismissesKeyboard(.interactively)
             }
             .background(Color.bg)
-            .scrollDismissesKeyboard(.interactively)
-            .navigationTitle("Edit Appointment")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }
-                        .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
         }
         .presentationCornerRadius(24)
     }
