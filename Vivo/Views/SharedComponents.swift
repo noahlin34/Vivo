@@ -143,6 +143,77 @@ extension View {
     }
 }
 
+// MARK: - Form Toolbars
+
+struct FormToolbar: View {
+    let title: String
+    let gradient: [Color]
+    var saveDisabled: Bool = false
+    let onCancel: () -> Void
+    let onSave: () -> Void
+
+    var body: some View {
+        ZStack {
+            Text(title)
+                .font(.system(size: 16, weight: .medium, design: .serif))
+                .foregroundStyle(Color.nearBlack)
+            HStack {
+                Button(action: onCancel) {
+                    Text("Cancel")
+                        .font(.system(size: 15))
+                        .foregroundStyle(Color.mutedFg)
+                }
+                Spacer()
+                Button(action: onSave) {
+                    Text("Save")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 8)
+                        .background(LinearGradient(colors: gradient, startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .clipShape(Capsule())
+                }
+                .disabled(saveDisabled)
+                .opacity(saveDisabled ? 0.5 : 1.0)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+    }
+}
+
+struct DetailToolbar: View {
+    let title: String
+    var showEdit: Bool = true
+    let onDone: () -> Void
+    var onEdit: () -> Void = {}
+
+    var body: some View {
+        ZStack {
+            Text(title)
+                .font(.system(size: 16, weight: .medium, design: .serif))
+                .foregroundStyle(Color.nearBlack)
+            HStack {
+                Button(action: onDone) {
+                    Text("Done")
+                        .font(.system(size: 15))
+                        .foregroundStyle(Color.mutedFg)
+                }
+                Spacer()
+                if showEdit {
+                    Button(action: onEdit) {
+                        Text("Edit")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(Color.primaryTeal)
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+    }
+}
+
 // MARK: - Gradient Add Button
 
 struct GradientAddButton: View {
