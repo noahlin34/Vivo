@@ -178,7 +178,8 @@ struct FormToolbar: View {
             }
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 12)
+        .padding(.top, 16)
+        .padding(.bottom, 12)
     }
 }
 
@@ -210,7 +211,8 @@ struct DetailToolbar: View {
             }
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 12)
+        .padding(.top, 16)
+        .padding(.bottom, 12)
     }
 }
 
