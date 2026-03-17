@@ -374,85 +374,80 @@ struct AddVitalView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    FormHeader(
-                        icon: "waveform.path.ecg",
-                        title: "Log Vital",
-                        subtitle: "Record a health measurement",
-                        gradient: [.roseStart, .roseEnd]
-                    )
-                    FormSection(title: "Type", dotColor: Color.roseStart) {
-                        FormChipPicker(
-                            selection: $type,
-                            options: VitalType.allCases,
-                            labels: { $0.rawValue },
-                            gradient: [.roseStart, .roseEnd],
-                            icons: { VitalTypeStyle.forType($0.rawValue).icon }
+            VStack(spacing: 0) {
+                FormToolbar(title: "Log Vital", gradient: [Color.roseStart, Color.roseEnd],
+                            saveDisabled: value.trimmingCharacters(in: .whitespaces).isEmpty,
+                            onCancel: { dismiss() }, onSave: { save() })
+                ScrollView {
+                    VStack(spacing: 20) {
+                        FormHeader(
+                            icon: "waveform.path.ecg",
+                            title: "Log Vital",
+                            subtitle: "Record a health measurement",
+                            gradient: [.roseStart, .roseEnd]
                         )
-                    }
-                    FormSection(title: "Value", dotColor: Color.roseStart) {
-                        if type.hasDualValue {
-                            HStack(spacing: 8) {
-                                FormTextField(label: "Systolic", text: $value, placeholder: "120", keyboardType: .numberPad)
-                                Text("/")
-                                    .font(.system(size: 20, weight: .light))
-                                    .foregroundStyle(Color.mutedFg)
-                                FormTextField(label: "Diastolic", text: $secondaryValue, placeholder: "80", keyboardType: .numberPad)
-                            }
-                        } else {
-                            FormTextField(
-                                label: type.unit,
-                                text: $value,
-                                placeholder: "Enter value",
-                                icon: VitalTypeStyle.forType(type.rawValue).icon,
-                                keyboardType: type == .weight ? .decimalPad : .numberPad
+                        FormSection(title: "Type", dotColor: Color.roseStart) {
+                            FormChipPicker(
+                                selection: $type,
+                                options: VitalType.allCases,
+                                labels: { $0.rawValue },
+                                gradient: [.roseStart, .roseEnd],
+                                icons: { VitalTypeStyle.forType($0.rawValue).icon }
                             )
                         }
-                    }
-                    FormSection(title: "When", dotColor: Color.roseStart) {
-                        HStack(spacing: 10) {
-                            Image(systemName: "calendar.clock")
-                                .font(.system(size: 14))
-                                .foregroundStyle(Color.primaryTeal)
-                                .frame(width: 20)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Date & Time")
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundStyle(Color.mutedFg)
-                                DatePicker("", selection: $recordedAt)
-                                    .labelsHidden()
-                                    .datePickerStyle(.compact)
-                                    .tint(Color.primaryTeal)
+                        FormSection(title: "Value", dotColor: Color.roseStart) {
+                            if type.hasDualValue {
+                                HStack(spacing: 8) {
+                                    FormTextField(label: "Systolic", text: $value, placeholder: "120", keyboardType: .numberPad)
+                                    Text("/")
+                                        .font(.system(size: 20, weight: .light))
+                                        .foregroundStyle(Color.mutedFg)
+                                    FormTextField(label: "Diastolic", text: $secondaryValue, placeholder: "80", keyboardType: .numberPad)
+                                }
+                            } else {
+                                FormTextField(
+                                    label: type.unit,
+                                    text: $value,
+                                    placeholder: "Enter value",
+                                    icon: VitalTypeStyle.forType(type.rawValue).icon,
+                                    keyboardType: type == .weight ? .decimalPad : .numberPad
+                                )
                             }
-                            Spacer()
                         }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 12)
-                        .background(Color.mutedBg.opacity(0.5))
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        FormSection(title: "When", dotColor: Color.roseStart) {
+                            HStack(spacing: 10) {
+                                Image(systemName: "calendar.clock")
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(Color.primaryTeal)
+                                    .frame(width: 20)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Date & Time")
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundStyle(Color.mutedFg)
+                                    DatePicker("", selection: $recordedAt)
+                                        .labelsHidden()
+                                        .datePickerStyle(.compact)
+                                        .tint(Color.primaryTeal)
+                                }
+                                Spacer()
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 12)
+                            .background(Color.mutedBg.opacity(0.5))
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        }
+                        FormSection(title: "Notes") {
+                            FormTextField(label: "Notes", text: $notes, placeholder: "Optional", icon: "note.text")
+                        }
                     }
-                    FormSection(title: "Notes") {
-                        FormTextField(label: "Notes", text: $notes, placeholder: "Optional", icon: "note.text")
-                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+                    .padding(.bottom, 40)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
-                .padding(.bottom, 40)
+                .scrollDismissesKeyboard(.interactively)
             }
             .background(Color.bg)
-            .scrollDismissesKeyboard(.interactively)
-            .navigationTitle("Log Vital")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }
-                        .disabled(value.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
         }
         .presentationCornerRadius(24)
     }
@@ -497,7 +492,10 @@ struct VitalDetailSheet: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            VStack(spacing: 0) {
+                DetailToolbar(title: "Vital Details", showEdit: !isFromHealthKit,
+                              onDone: { dismiss() }, onEdit: { showEdit = true })
+                ScrollView {
                 VStack(spacing: 0) {
                     // Header
                     VStack(spacing: 8) {
@@ -583,25 +581,17 @@ struct VitalDetailSheet: View {
                     }
                 }
             }
-            .background(Color.cardBg)
-            .navigationTitle("Vital Details")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                }
-                if !isFromHealthKit {
-                    ToolbarItem(placement: .primaryAction) {
-                        Button("Edit") { showEdit = true }
-                    }
-                }
             }
+            .background(Color.cardBg)
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showEdit) {
                 EditVitalView(vital: vital)
             }
-        }
-        .presentationDetents([.medium, .large])
-        .presentationCornerRadius(24)
+            }
+            .background(Color.cardBg)
+            .toolbar(.hidden, for: .navigationBar)
+            .presentationDetents([.medium, .large])
+            .presentationCornerRadius(24)
     }
 
     private var trendChart: some View {
@@ -731,92 +721,87 @@ struct EditVitalView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    FormSection(title: "Type", dotColor: Color.roseStart) {
-                        let style = VitalTypeStyle.forType(vital.type)
-                        HStack(spacing: 10) {
-                            Image(systemName: style.icon)
-                                .font(.system(size: 14))
-                                .foregroundStyle(style.color)
-                                .frame(width: 20)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Type")
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundStyle(Color.mutedFg)
-                                Text(vital.type)
-                                    .font(.system(size: 15))
-                                    .foregroundStyle(Color.nearBlack)
+            VStack(spacing: 0) {
+                FormToolbar(title: "Edit Vital", gradient: [Color.roseStart, Color.roseEnd],
+                            saveDisabled: value.trimmingCharacters(in: .whitespaces).isEmpty,
+                            onCancel: { dismiss() }, onSave: { save() })
+                ScrollView {
+                    VStack(spacing: 20) {
+                        FormSection(title: "Type", dotColor: Color.roseStart) {
+                            let style = VitalTypeStyle.forType(vital.type)
+                            HStack(spacing: 10) {
+                                Image(systemName: style.icon)
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(style.color)
+                                    .frame(width: 20)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Type")
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundStyle(Color.mutedFg)
+                                    Text(vital.type)
+                                        .font(.system(size: 15))
+                                        .foregroundStyle(Color.nearBlack)
+                                }
+                                Spacer()
                             }
-                            Spacer()
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 12)
+                            .background(Color.mutedBg.opacity(0.5))
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                         }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 12)
-                        .background(Color.mutedBg.opacity(0.5))
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    }
-                    FormSection(title: "Value", dotColor: Color.roseStart) {
-                        if vitalType?.hasDualValue == true {
-                            HStack(spacing: 8) {
-                                FormTextField(label: "Systolic", text: $value, placeholder: "120", keyboardType: .numberPad)
-                                Text("/")
-                                    .font(.system(size: 20, weight: .light))
-                                    .foregroundStyle(Color.mutedFg)
-                                FormTextField(label: "Diastolic", text: $secondaryValue, placeholder: "80", keyboardType: .numberPad)
+                        FormSection(title: "Value", dotColor: Color.roseStart) {
+                            if vitalType?.hasDualValue == true {
+                                HStack(spacing: 8) {
+                                    FormTextField(label: "Systolic", text: $value, placeholder: "120", keyboardType: .numberPad)
+                                    Text("/")
+                                        .font(.system(size: 20, weight: .light))
+                                        .foregroundStyle(Color.mutedFg)
+                                    FormTextField(label: "Diastolic", text: $secondaryValue, placeholder: "80", keyboardType: .numberPad)
+                                }
+                            } else {
+                                FormTextField(
+                                    label: vital.unit,
+                                    text: $value,
+                                    placeholder: "Enter value",
+                                    icon: VitalTypeStyle.forType(vital.type).icon,
+                                    keyboardType: vital.type == "Weight" ? .decimalPad : .numberPad
+                                )
                             }
-                        } else {
-                            FormTextField(
-                                label: vital.unit,
-                                text: $value,
-                                placeholder: "Enter value",
-                                icon: VitalTypeStyle.forType(vital.type).icon,
-                                keyboardType: vital.type == "Weight" ? .decimalPad : .numberPad
-                            )
                         }
-                    }
-                    FormSection(title: "When", dotColor: Color.roseStart) {
-                        HStack(spacing: 10) {
-                            Image(systemName: "calendar.clock")
-                                .font(.system(size: 14))
-                                .foregroundStyle(Color.primaryTeal)
-                                .frame(width: 20)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Date & Time")
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundStyle(Color.mutedFg)
-                                DatePicker("", selection: $recordedAt)
-                                    .labelsHidden()
-                                    .datePickerStyle(.compact)
-                                    .tint(Color.primaryTeal)
+                        FormSection(title: "When", dotColor: Color.roseStart) {
+                            HStack(spacing: 10) {
+                                Image(systemName: "calendar.clock")
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(Color.primaryTeal)
+                                    .frame(width: 20)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Date & Time")
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundStyle(Color.mutedFg)
+                                    DatePicker("", selection: $recordedAt)
+                                        .labelsHidden()
+                                        .datePickerStyle(.compact)
+                                        .tint(Color.primaryTeal)
+                                }
+                                Spacer()
                             }
-                            Spacer()
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 12)
+                            .background(Color.mutedBg.opacity(0.5))
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                         }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 12)
-                        .background(Color.mutedBg.opacity(0.5))
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        FormSection(title: "Notes") {
+                            FormTextField(label: "Notes", text: $notes, placeholder: "Optional", icon: "note.text")
+                        }
                     }
-                    FormSection(title: "Notes") {
-                        FormTextField(label: "Notes", text: $notes, placeholder: "Optional", icon: "note.text")
-                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 16)
+                    .padding(.bottom, 40)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 16)
-                .padding(.bottom, 40)
+                .scrollDismissesKeyboard(.interactively)
             }
             .background(Color.bg)
-            .scrollDismissesKeyboard(.interactively)
-            .navigationTitle("Edit Vital")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }
-                        .disabled(value.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
         }
         .presentationCornerRadius(24)
     }
