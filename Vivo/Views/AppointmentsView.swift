@@ -303,43 +303,33 @@ struct AddAppointmentView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    HStack(spacing: 8) {
-                        Image(systemName: "sparkles")
-                            .foregroundStyle(.white)
-                            .frame(width: 32, height: 32)
-                            .background(LinearGradient(colors: [.cyanStart, .cyanEnd], startPoint: .topLeading, endPoint: .bottomTrailing))
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        Text("New Appointment")
-                            .font(.headline)
+            ScrollView {
+                VStack(spacing: 20) {
+                    FormHeader(
+                        icon: "calendar",
+                        title: "New Appointment",
+                        subtitle: "Schedule your next visit",
+                        gradient: [.amberStart, .amberEnd]
+                    )
+                    FormSection(title: "Info", dotColor: Color.amberStart) {
+                        FormTextField(label: "Title", text: $title, placeholder: "e.g. Annual Physical", icon: "calendar")
+                        doctorRow
+                    }
+                    FormSection(title: "Date & Time", dotColor: Color.amberStart) {
+                        datePickerRow(label: "Date", icon: "calendar", components: .date)
+                        datePickerRow(label: "Time", icon: "clock", components: .hourAndMinute)
+                    }
+                    FormSection(title: "Details", dotColor: Color.amberStart) {
+                        FormTextField(label: "Location", text: $location, placeholder: "Optional", icon: "mappin.circle.fill")
+                        FormTextField(label: "Notes", text: $notes, placeholder: "Optional", icon: "note.text")
                     }
                 }
-
-                Section("Appointment Info") {
-                    TextField("Title (e.g. Annual Physical)", text: $title)
-                    if doctors.isEmpty {
-                        TextField("Doctor Name", text: $doctorName)
-                    } else {
-                        Picker("Doctor", selection: $selectedDoctor) {
-                            Text("None").tag(nil as Doctor?)
-                            ForEach(doctors) { doc in
-                                Text(doc.name).tag(doc as Doctor?)
-                            }
-                        }
-                    }
-                }
-
-                Section("Date & Time") {
-                    DatePicker("Date", selection: $date, displayedComponents: .date)
-                    DatePicker("Time", selection: $date, displayedComponents: .hourAndMinute)
-                }
-
-                Section("Details") {
-                    TextField("Location", text: $location)
-                    TextField("Notes", text: $notes)
-                }
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
+                .padding(.bottom, 40)
             }
+            .background(Color.bg)
+            .scrollDismissesKeyboard(.interactively)
             .navigationTitle("New Appointment")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -353,6 +343,71 @@ struct AddAppointmentView: View {
             }
         }
         .presentationCornerRadius(24)
+    }
+
+    @ViewBuilder
+    private var doctorRow: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "person.fill")
+                .font(.system(size: 14))
+                .foregroundStyle(Color.primaryTeal)
+                .frame(width: 20)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Doctor")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color.mutedFg)
+                if doctors.isEmpty {
+                    TextField("Doctor name (optional)", text: $doctorName)
+                        .font(.system(size: 15))
+                        .foregroundStyle(Color.nearBlack)
+                } else {
+                    Menu {
+                        Button("None") { selectedDoctor = nil }
+                        ForEach(doctors) { doc in
+                            Button(doc.name) { selectedDoctor = doc }
+                        }
+                    } label: {
+                        HStack {
+                            Text(selectedDoctor?.name ?? "Select doctor")
+                                .font(.system(size: 15))
+                                .foregroundStyle(selectedDoctor == nil ? Color.mutedFg : Color.nearBlack)
+                            Spacer()
+                            Image(systemName: "chevron.up.chevron.down")
+                                .font(.system(size: 10))
+                                .foregroundStyle(Color.mutedFg.opacity(0.6))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(Color.mutedBg.opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private func datePickerRow(label: String, icon: String, components: DatePickerComponents) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 14))
+                .foregroundStyle(Color.primaryTeal)
+                .frame(width: 20)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color.mutedFg)
+                DatePicker("", selection: $date, displayedComponents: components)
+                    .labelsHidden()
+                    .datePickerStyle(.compact)
+                    .tint(Color.primaryTeal)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(Color.mutedBg.opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     private func save() {
@@ -396,29 +451,27 @@ struct EditAppointmentView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Appointment Info") {
-                    TextField("Title", text: $title)
-                    if doctors.isEmpty {
-                        TextField("Doctor Name", text: $doctorName)
-                    } else {
-                        Picker("Doctor", selection: $selectedDoctor) {
-                            Text("None").tag(nil as Doctor?)
-                            ForEach(doctors) { doc in
-                                Text(doc.name).tag(doc as Doctor?)
-                            }
-                        }
+            ScrollView {
+                VStack(spacing: 20) {
+                    FormSection(title: "Info", dotColor: Color.amberStart) {
+                        FormTextField(label: "Title", text: $title, placeholder: "e.g. Annual Physical", icon: "calendar")
+                        doctorRow
+                    }
+                    FormSection(title: "Date & Time", dotColor: Color.amberStart) {
+                        datePickerRow(label: "Date", icon: "calendar", components: .date)
+                        datePickerRow(label: "Time", icon: "clock", components: .hourAndMinute)
+                    }
+                    FormSection(title: "Details", dotColor: Color.amberStart) {
+                        FormTextField(label: "Location", text: $location, placeholder: "Optional", icon: "mappin.circle.fill")
+                        FormTextField(label: "Notes", text: $notes, placeholder: "Optional", icon: "note.text")
                     }
                 }
-                Section("Date & Time") {
-                    DatePicker("Date", selection: $date, displayedComponents: .date)
-                    DatePicker("Time", selection: $date, displayedComponents: .hourAndMinute)
-                }
-                Section("Details") {
-                    TextField("Location", text: $location)
-                    TextField("Notes", text: $notes)
-                }
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
+                .padding(.bottom, 40)
             }
+            .background(Color.bg)
+            .scrollDismissesKeyboard(.interactively)
             .navigationTitle("Edit Appointment")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -432,6 +485,71 @@ struct EditAppointmentView: View {
             }
         }
         .presentationCornerRadius(24)
+    }
+
+    @ViewBuilder
+    private var doctorRow: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "person.fill")
+                .font(.system(size: 14))
+                .foregroundStyle(Color.primaryTeal)
+                .frame(width: 20)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Doctor")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color.mutedFg)
+                if doctors.isEmpty {
+                    TextField("Doctor name (optional)", text: $doctorName)
+                        .font(.system(size: 15))
+                        .foregroundStyle(Color.nearBlack)
+                } else {
+                    Menu {
+                        Button("None") { selectedDoctor = nil }
+                        ForEach(doctors) { doc in
+                            Button(doc.name) { selectedDoctor = doc }
+                        }
+                    } label: {
+                        HStack {
+                            Text(selectedDoctor?.name ?? "Select doctor")
+                                .font(.system(size: 15))
+                                .foregroundStyle(selectedDoctor == nil ? Color.mutedFg : Color.nearBlack)
+                            Spacer()
+                            Image(systemName: "chevron.up.chevron.down")
+                                .font(.system(size: 10))
+                                .foregroundStyle(Color.mutedFg.opacity(0.6))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(Color.mutedBg.opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private func datePickerRow(label: String, icon: String, components: DatePickerComponents) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 14))
+                .foregroundStyle(Color.primaryTeal)
+                .frame(width: 20)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color.mutedFg)
+                DatePicker("", selection: $date, displayedComponents: components)
+                    .labelsHidden()
+                    .datePickerStyle(.compact)
+                    .tint(Color.primaryTeal)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(Color.mutedBg.opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     private func save() {
