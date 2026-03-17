@@ -66,44 +66,47 @@ final class HealthKitService {
     // MARK: - Private
 
     private func fetchBloodPressure(since cutoff: Date) async throws -> [ImportedVital] {
-        guard let correlationType = HKCorrelationType.correlationType(forIdentifier: .bloodPressure) else { return [] }
+        // Query systolic and diastolic separately to avoid HKCorrelationType
+        // authorization issues on iOS 18 — pair them by timestamp instead.
+        let systolicSamples = try await fetchRawSamples(.bloodPressureSystolic, since: cutoff)
+        let diastolicSamples = try await fetchRawSamples(.bloodPressureDiastolic, since: cutoff)
+
+        return systolicSamples.compactMap { sys in
+            // Find diastolic sample recorded within 60 seconds of this systolic
+            guard let dia = diastolicSamples.first(where: {
+                abs($0.startDate.timeIntervalSince(sys.startDate)) < 60
+            }) else { return nil }
+
+            return ImportedVital(
+                type: "Blood Pressure",
+                value: sys.quantity.doubleValue(for: .millimeterOfMercury()),
+                secondaryValue: dia.quantity.doubleValue(for: .millimeterOfMercury()),
+                unit: "mmHg",
+                recordedAt: sys.startDate
+            )
+        }
+    }
+
+    private func fetchRawSamples(
+        _ identifier: HKQuantityTypeIdentifier,
+        since cutoff: Date
+    ) async throws -> [HKQuantitySample] {
+        guard let type = HKQuantityType.quantityType(forIdentifier: identifier) else { return [] }
         let predicate = HKQuery.predicateForSamples(withStart: cutoff, end: Date(), options: .strictStartDate)
+        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
 
         return try await withCheckedThrowingContinuation { continuation in
-            let query = HKCorrelationQuery(
-                type: correlationType,
+            let query = HKSampleQuery(
+                sampleType: type,
                 predicate: predicate,
-                samplePredicates: nil
-            ) { _, results, error in
+                limit: HKObjectQueryNoLimit,
+                sortDescriptors: [sortDescriptor]
+            ) { _, samples, error in
                 if let error {
                     continuation.resume(throwing: error)
                     return
                 }
-                guard let correlations = results else {
-                    continuation.resume(returning: [])
-                    return
-                }
-
-                let vitals: [ImportedVital] = correlations.compactMap { correlation in
-                    guard
-                        let systolicType = HKQuantityType.quantityType(forIdentifier: .bloodPressureSystolic),
-                        let diastolicType = HKQuantityType.quantityType(forIdentifier: .bloodPressureDiastolic),
-                        let systolicSample = correlation.objects(for: systolicType).first as? HKQuantitySample,
-                        let diastolicSample = correlation.objects(for: diastolicType).first as? HKQuantitySample
-                    else { return nil }
-
-                    let systolic = systolicSample.quantity.doubleValue(for: .millimeterOfMercury())
-                    let diastolic = diastolicSample.quantity.doubleValue(for: .millimeterOfMercury())
-
-                    return ImportedVital(
-                        type: "Blood Pressure",
-                        value: systolic,
-                        secondaryValue: diastolic,
-                        unit: "mmHg",
-                        recordedAt: correlation.startDate
-                    )
-                }
-                continuation.resume(returning: vitals)
+                continuation.resume(returning: (samples as? [HKQuantitySample]) ?? [])
             }
             store.execute(query)
         }
