@@ -129,7 +129,7 @@ struct HomeView: View {
                 heroChip(
                     icon: "calendar",
                     label: "Next Appointment",
-                    value: nextAppointment.map { $0.date.formatted(.dateTime.month(.wide).day()) } ?? "None scheduled"
+                    value: nextAppointment.map { $0.date.formatted(.dateTime.month(.wide).day().hour().minute()) } ?? "None scheduled"
                 )
                 .padding(.top, 10)
                 .padding(.bottom, 28)
@@ -444,10 +444,10 @@ struct HomeView: View {
                 Spacer()
                 Text("\(doctors.count) doctors")
                     .font(.system(size: 12))
-                    .foregroundStyle(Color(hex: "059669"))
+                    .foregroundStyle(Color.tealEnd)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
-                    .background(Color(hex: "059669").opacity(0.08))
+                    .background(Color.tealEnd.opacity(0.08))
                     .clipShape(Capsule())
             }
             .padding(.horizontal, 20)
@@ -467,7 +467,7 @@ struct HomeView: View {
                                         .foregroundStyle(.white)
                                 }
                                 .frame(width: 44, height: 44)
-                                .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 
                                 Text(doc.name)
                                     .font(.system(size: 14, weight: .medium))
@@ -542,10 +542,35 @@ struct HomeView: View {
 
     var recentNotesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Recent Notes")
-                .font(.system(size: 18, weight: .medium))
-                .foregroundStyle(Color.nearBlack)
-                .padding(.horizontal, 20)
+            HStack {
+                Text("Recent Notes")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(Color.nearBlack)
+                Spacer()
+                if notes.count > 2 {
+                    Button {
+                        selectedTab = 4
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    } label: {
+                        HStack(spacing: 3) {
+                            Text("See all")
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 10, weight: .semibold))
+                        }
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.purpleStart)
+                    }
+                } else {
+                    Text("\(notes.count) note\(notes.count == 1 ? "" : "s")")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.purpleStart)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Color.purpleStart.opacity(0.08))
+                        .clipShape(Capsule())
+                }
+            }
+            .padding(.horizontal, 20)
 
             VStack(spacing: 10) {
                 ForEach(notes.prefix(2)) { note in
@@ -578,7 +603,7 @@ struct HomeView: View {
                         .padding(16)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(Color.cardBg)
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                         .warmShadow()
                     }
                     .buttonStyle(.plain)
