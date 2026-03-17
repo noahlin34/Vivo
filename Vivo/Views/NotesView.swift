@@ -153,6 +153,7 @@ struct NoteDetailSheet: View {
 
         return NavigationStack {
             VStack(spacing: 0) {
+                DetailToolbar(title: "Note", onDone: { dismiss() }, onEdit: { showEdit = true })
                 // Gradient accent
                 LinearGradient(colors: style.gradient, startPoint: .leading, endPoint: .trailing)
                     .frame(height: 4)
@@ -217,16 +218,7 @@ struct NoteDetailSheet: View {
                 .padding(.bottom, 24)
             }
             .background(Color.cardBg)
-            .navigationTitle("Note")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                }
-                ToolbarItem(placement: .primaryAction) {
-                    Button("Edit") { showEdit = true }
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showEdit) {
                 EditNoteView(note: note)
             }
@@ -257,57 +249,52 @@ struct EditNoteView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    FormSection(title: "Info", dotColor: Color.purpleStart) {
-                        FormTextField(label: "Title", text: $title, placeholder: "Note title", icon: "note.text")
-                    }
-                    FormSection(title: "Category", dotColor: Color.purpleStart) {
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 8) {
-                            ForEach(categories, id: \.self) { cat in
-                                let style = CategoryStyle.forCategory(cat)
-                                let isSelected = category == cat
-                                Button { category = cat } label: {
-                                    Text(cat)
-                                        .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
-                                        .foregroundStyle(isSelected ? .white : Color.mutedFg)
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 8)
-                                        .frame(maxWidth: .infinity)
-                                        .background {
-                                            if isSelected {
-                                                LinearGradient(colors: style.gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
-                                            } else {
-                                                Color.mutedBg
+            VStack(spacing: 0) {
+                FormToolbar(title: "Edit Note", gradient: [Color.purpleStart, Color.purpleEnd],
+                            saveDisabled: title.trimmingCharacters(in: .whitespaces).isEmpty,
+                            onCancel: { dismiss() }, onSave: { save() })
+                ScrollView {
+                    VStack(spacing: 20) {
+                        FormSection(title: "Info", dotColor: Color.purpleStart) {
+                            FormTextField(label: "Title", text: $title, placeholder: "Note title", icon: "note.text")
+                        }
+                        FormSection(title: "Category", dotColor: Color.purpleStart) {
+                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 8) {
+                                ForEach(categories, id: \.self) { cat in
+                                    let style = CategoryStyle.forCategory(cat)
+                                    let isSelected = category == cat
+                                    Button { category = cat } label: {
+                                        Text(cat)
+                                            .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                                            .foregroundStyle(isSelected ? .white : Color.mutedFg)
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 8)
+                                            .frame(maxWidth: .infinity)
+                                            .background {
+                                                if isSelected {
+                                                    LinearGradient(colors: style.gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
+                                                } else {
+                                                    Color.mutedBg
+                                                }
                                             }
-                                        }
-                                        .clipShape(Capsule())
+                                            .clipShape(Capsule())
+                                    }
+                                    .buttonStyle(.plain)
                                 }
-                                .buttonStyle(.plain)
                             }
                         }
+                        FormSection(title: "Content", dotColor: Color.purpleStart) {
+                            FormTextEditor(label: "Content", text: $content, icon: "text.alignleft")
+                        }
                     }
-                    FormSection(title: "Content", dotColor: Color.purpleStart) {
-                        FormTextEditor(label: "Content", text: $content, icon: "text.alignleft")
-                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 16)
+                    .padding(.bottom, 40)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 16)
-                .padding(.bottom, 40)
+                .scrollDismissesKeyboard(.interactively)
             }
             .background(Color.bg)
-            .scrollDismissesKeyboard(.interactively)
-            .navigationTitle("Edit Note")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }
-                        .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
         }
         .presentationCornerRadius(24)
     }
@@ -334,63 +321,58 @@ struct AddNoteView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    FormHeader(
-                        icon: "note.text",
-                        title: "New Note",
-                        subtitle: "Capture a health observation",
-                        gradient: [.purpleStart, .purpleEnd]
-                    )
-                    FormSection(title: "Info", dotColor: Color.purpleStart) {
-                        FormTextField(label: "Title", text: $title, placeholder: "Note title", icon: "note.text")
-                    }
-                    FormSection(title: "Category", dotColor: Color.purpleStart) {
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 8) {
-                            ForEach(categories, id: \.self) { cat in
-                                let style = CategoryStyle.forCategory(cat)
-                                let isSelected = category == cat
-                                Button { category = cat } label: {
-                                    Text(cat)
-                                        .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
-                                        .foregroundStyle(isSelected ? .white : Color.mutedFg)
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 8)
-                                        .frame(maxWidth: .infinity)
-                                        .background {
-                                            if isSelected {
-                                                LinearGradient(colors: style.gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
-                                            } else {
-                                                Color.mutedBg
+            VStack(spacing: 0) {
+                FormToolbar(title: "New Note", gradient: [Color.purpleStart, Color.purpleEnd],
+                            saveDisabled: title.trimmingCharacters(in: .whitespaces).isEmpty,
+                            onCancel: { dismiss() }, onSave: { save() })
+                ScrollView {
+                    VStack(spacing: 20) {
+                        FormHeader(
+                            icon: "note.text",
+                            title: "New Note",
+                            subtitle: "Capture a health observation",
+                            gradient: [.purpleStart, .purpleEnd]
+                        )
+                        FormSection(title: "Info", dotColor: Color.purpleStart) {
+                            FormTextField(label: "Title", text: $title, placeholder: "Note title", icon: "note.text")
+                        }
+                        FormSection(title: "Category", dotColor: Color.purpleStart) {
+                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 8) {
+                                ForEach(categories, id: \.self) { cat in
+                                    let style = CategoryStyle.forCategory(cat)
+                                    let isSelected = category == cat
+                                    Button { category = cat } label: {
+                                        Text(cat)
+                                            .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                                            .foregroundStyle(isSelected ? .white : Color.mutedFg)
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 8)
+                                            .frame(maxWidth: .infinity)
+                                            .background {
+                                                if isSelected {
+                                                    LinearGradient(colors: style.gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
+                                                } else {
+                                                    Color.mutedBg
+                                                }
                                             }
-                                        }
-                                        .clipShape(Capsule())
+                                            .clipShape(Capsule())
+                                    }
+                                    .buttonStyle(.plain)
                                 }
-                                .buttonStyle(.plain)
                             }
                         }
+                        FormSection(title: "Content", dotColor: Color.purpleStart) {
+                            FormTextEditor(label: "Content", text: $content, icon: "text.alignleft")
+                        }
                     }
-                    FormSection(title: "Content", dotColor: Color.purpleStart) {
-                        FormTextEditor(label: "Content", text: $content, icon: "text.alignleft")
-                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+                    .padding(.bottom, 40)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
-                .padding(.bottom, 40)
+                .scrollDismissesKeyboard(.interactively)
             }
             .background(Color.bg)
-            .scrollDismissesKeyboard(.interactively)
-            .navigationTitle("New Note")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }
-                        .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
         }
         .presentationCornerRadius(24)
     }
