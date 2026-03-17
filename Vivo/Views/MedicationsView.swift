@@ -231,7 +231,11 @@ struct MedicationDetailSheet: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            VStack(spacing: 0) {
+                DetailToolbar(title: "Medication Details",
+                              onDone: { dismiss() },
+                              onEdit: { showEdit = true })
+                ScrollView {
                 VStack(spacing: 0) {
                     // Header
                     HStack(spacing: 16) {
@@ -391,17 +395,9 @@ struct MedicationDetailSheet: View {
                     .padding(.bottom, 24)
                 }
             }
-            .background(Color.cardBg)
-            .navigationTitle("Medication Details")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                }
-                ToolbarItem(placement: .primaryAction) {
-                    Button("Edit") { showEdit = true }
-                }
             }
+            .background(Color.cardBg)
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showEdit) {
                 EditMedicationView(medication: medication)
             }
@@ -415,9 +411,9 @@ struct MedicationDetailSheet: View {
             } message: {
                 Text("How many pills are you adding?")
             }
-        }
-        .presentationDetents([.medium, .large])
-        .presentationCornerRadius(24)
+            }
+            .presentationDetents([.medium, .large])
+            .presentationCornerRadius(24)
     }
 
     func detailRow(label: String, value: String) -> some View {
@@ -457,87 +453,82 @@ struct AddMedicationView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    FormHeader(
-                        icon: "pill.fill",
-                        title: "Add Medication",
-                        subtitle: "Track your daily prescriptions",
-                        gradient: [.tealStart, .tealEnd]
-                    )
-                    FormSection(title: "Info") {
-                        FormTextField(label: "Name", text: $name, placeholder: "Medication name", icon: "pill.fill")
-                        FormTextField(label: "Dosage", text: $dosage, placeholder: "e.g. 10mg", icon: "scalemass.fill")
-                        FormTextField(label: "Notes", text: $notes, placeholder: "Optional", icon: "note.text")
-                    }
-                    FormSection(title: "Schedule") {
-                        FormChipPicker(
-                            selection: $frequency,
-                            options: frequencies,
-                            labels: { $0 },
+            VStack(spacing: 0) {
+                FormToolbar(title: "Add Medication", gradient: [Color.tealStart, Color.tealEnd],
+                            saveDisabled: name.trimmingCharacters(in: .whitespaces).isEmpty,
+                            onCancel: { dismiss() }, onSave: { save() })
+                ScrollView {
+                    VStack(spacing: 20) {
+                        FormHeader(
+                            icon: "pill.fill",
+                            title: "Add Medication",
+                            subtitle: "Track your daily prescriptions",
                             gradient: [.tealStart, .tealEnd]
                         )
-                        HStack(spacing: 10) {
-                            Image(systemName: "clock")
-                                .font(.system(size: 14))
-                                .foregroundStyle(Color.primaryTeal)
-                                .frame(width: 20)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Time")
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundStyle(Color.mutedFg)
-                                DatePicker("", selection: $scheduledTime, displayedComponents: .hourAndMinute)
-                                    .labelsHidden()
-                                    .datePickerStyle(.compact)
-                                    .tint(Color.primaryTeal)
-                            }
-                            Spacer()
+                        FormSection(title: "Info") {
+                            FormTextField(label: "Name", text: $name, placeholder: "Medication name", icon: "pill.fill")
+                            FormTextField(label: "Dosage", text: $dosage, placeholder: "e.g. 10mg", icon: "scalemass.fill")
+                            FormTextField(label: "Notes", text: $notes, placeholder: "Optional", icon: "note.text")
                         }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 12)
-                        .background(Color.mutedBg.opacity(0.5))
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    }
-                    FormSection(title: "Color") {
-                        FormColorPicker(selection: $colorIndex, colors: colorHexes, names: colorNames)
-                    }
-                    FormSection(title: "Refill Tracking") {
-                        Toggle(isOn: $trackPillCount) {
-                            Text("Track pill supply")
-                                .font(.system(size: 15))
-                                .foregroundStyle(Color.nearBlack)
-                        }
-                        .tint(Color.primaryTeal)
-                        if trackPillCount {
-                            HStack {
-                                Text("Initial supply")
-                                    .font(.system(size: 15))
-                                    .foregroundStyle(Color.nearBlack)
+                        FormSection(title: "Schedule") {
+                            FormChipPicker(
+                                selection: $frequency,
+                                options: frequencies,
+                                labels: { $0 },
+                                gradient: [.tealStart, .tealEnd]
+                            )
+                            HStack(spacing: 10) {
+                                Image(systemName: "clock")
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(Color.primaryTeal)
+                                    .frame(width: 20)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Time")
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundStyle(Color.mutedFg)
+                                    DatePicker("", selection: $scheduledTime, displayedComponents: .hourAndMinute)
+                                        .labelsHidden()
+                                        .datePickerStyle(.compact)
+                                        .tint(Color.primaryTeal)
+                                }
                                 Spacer()
-                                Stepper("\(pillCount) pill\(pillCount == 1 ? "" : "s")", value: $pillCount, in: 0...999)
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 12)
+                            .background(Color.mutedBg.opacity(0.5))
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        }
+                        FormSection(title: "Color") {
+                            FormColorPicker(selection: $colorIndex, colors: colorHexes, names: colorNames)
+                        }
+                        FormSection(title: "Refill Tracking") {
+                            Toggle(isOn: $trackPillCount) {
+                                Text("Track pill supply")
                                     .font(.system(size: 15))
                                     .foregroundStyle(Color.nearBlack)
                             }
+                            .tint(Color.primaryTeal)
+                            if trackPillCount {
+                                HStack {
+                                    Text("Initial supply")
+                                        .font(.system(size: 15))
+                                        .foregroundStyle(Color.nearBlack)
+                                    Spacer()
+                                    Stepper("\(pillCount) pill\(pillCount == 1 ? "" : "s")", value: $pillCount, in: 0...999)
+                                        .font(.system(size: 15))
+                                        .foregroundStyle(Color.nearBlack)
+                                }
+                            }
                         }
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+                    .padding(.bottom, 40)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
-                .padding(.bottom, 40)
+                .scrollDismissesKeyboard(.interactively)
             }
             .background(Color.bg)
-            .scrollDismissesKeyboard(.interactively)
-            .navigationTitle("Add Medication")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }
-                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
         }
         .presentationCornerRadius(24)
     }
@@ -591,81 +582,76 @@ struct EditMedicationView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    FormSection(title: "Info") {
-                        FormTextField(label: "Name", text: $name, placeholder: "Medication name", icon: "pill.fill")
-                        FormTextField(label: "Dosage", text: $dosage, placeholder: "e.g. 10mg", icon: "scalemass.fill")
-                        FormTextField(label: "Notes", text: $notes, placeholder: "Optional", icon: "note.text")
-                    }
-                    FormSection(title: "Schedule") {
-                        FormChipPicker(
-                            selection: $frequency,
-                            options: frequencies,
-                            labels: { $0 },
-                            gradient: [.tealStart, .tealEnd]
-                        )
-                        HStack(spacing: 10) {
-                            Image(systemName: "clock")
-                                .font(.system(size: 14))
-                                .foregroundStyle(Color.primaryTeal)
-                                .frame(width: 20)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Time")
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundStyle(Color.mutedFg)
-                                DatePicker("", selection: $scheduledTime, displayedComponents: .hourAndMinute)
-                                    .labelsHidden()
-                                    .datePickerStyle(.compact)
-                                    .tint(Color.primaryTeal)
-                            }
-                            Spacer()
+            VStack(spacing: 0) {
+                FormToolbar(title: "Edit Medication", gradient: [Color.tealStart, Color.tealEnd],
+                            saveDisabled: name.trimmingCharacters(in: .whitespaces).isEmpty,
+                            onCancel: { dismiss() }, onSave: { save() })
+                ScrollView {
+                    VStack(spacing: 20) {
+                        FormSection(title: "Info") {
+                            FormTextField(label: "Name", text: $name, placeholder: "Medication name", icon: "pill.fill")
+                            FormTextField(label: "Dosage", text: $dosage, placeholder: "e.g. 10mg", icon: "scalemass.fill")
+                            FormTextField(label: "Notes", text: $notes, placeholder: "Optional", icon: "note.text")
                         }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 12)
-                        .background(Color.mutedBg.opacity(0.5))
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    }
-                    FormSection(title: "Color") {
-                        FormColorPicker(selection: $colorIndex, colors: colorHexes, names: colorNames)
-                    }
-                    FormSection(title: "Refill Tracking") {
-                        Toggle(isOn: $trackPillCount) {
-                            Text("Track pill supply")
-                                .font(.system(size: 15))
-                                .foregroundStyle(Color.nearBlack)
-                        }
-                        .tint(Color.primaryTeal)
-                        if trackPillCount {
-                            HStack {
-                                Text("Current supply")
-                                    .font(.system(size: 15))
-                                    .foregroundStyle(Color.nearBlack)
+                        FormSection(title: "Schedule") {
+                            FormChipPicker(
+                                selection: $frequency,
+                                options: frequencies,
+                                labels: { $0 },
+                                gradient: [.tealStart, .tealEnd]
+                            )
+                            HStack(spacing: 10) {
+                                Image(systemName: "clock")
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(Color.primaryTeal)
+                                    .frame(width: 20)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Time")
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundStyle(Color.mutedFg)
+                                    DatePicker("", selection: $scheduledTime, displayedComponents: .hourAndMinute)
+                                        .labelsHidden()
+                                        .datePickerStyle(.compact)
+                                        .tint(Color.primaryTeal)
+                                }
                                 Spacer()
-                                Stepper("\(pillCount) pill\(pillCount == 1 ? "" : "s")", value: $pillCount, in: 0...999)
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 12)
+                            .background(Color.mutedBg.opacity(0.5))
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        }
+                        FormSection(title: "Color") {
+                            FormColorPicker(selection: $colorIndex, colors: colorHexes, names: colorNames)
+                        }
+                        FormSection(title: "Refill Tracking") {
+                            Toggle(isOn: $trackPillCount) {
+                                Text("Track pill supply")
                                     .font(.system(size: 15))
                                     .foregroundStyle(Color.nearBlack)
                             }
+                            .tint(Color.primaryTeal)
+                            if trackPillCount {
+                                HStack {
+                                    Text("Current supply")
+                                        .font(.system(size: 15))
+                                        .foregroundStyle(Color.nearBlack)
+                                    Spacer()
+                                    Stepper("\(pillCount) pill\(pillCount == 1 ? "" : "s")", value: $pillCount, in: 0...999)
+                                        .font(.system(size: 15))
+                                        .foregroundStyle(Color.nearBlack)
+                                }
+                            }
                         }
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 16)
+                    .padding(.bottom, 40)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 16)
-                .padding(.bottom, 40)
+                .scrollDismissesKeyboard(.interactively)
             }
             .background(Color.bg)
-            .scrollDismissesKeyboard(.interactively)
-            .navigationTitle("Edit Medication")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }
-                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
         }
         .presentationCornerRadius(24)
     }
