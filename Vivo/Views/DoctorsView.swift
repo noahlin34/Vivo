@@ -398,30 +398,30 @@ struct AddDoctorView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    HStack(spacing: 8) {
-                        Image(systemName: "sparkles")
-                            .foregroundStyle(.white)
-                            .frame(width: 32, height: 32)
-                            .background(LinearGradient(colors: [.amberStart, .amberEnd], startPoint: .topLeading, endPoint: .bottomTrailing))
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        Text("Add Doctor")
-                            .font(.headline)
+            ScrollView {
+                VStack(spacing: 20) {
+                    FormHeader(
+                        icon: "stethoscope",
+                        title: "Add Doctor",
+                        subtitle: "Add a member to your care team",
+                        gradient: [.amberStart, .amberEnd]
+                    )
+                    FormSection(title: "Doctor Info", dotColor: Color.amberStart) {
+                        FormTextField(label: "Full Name", text: $name, placeholder: "Dr. Jane Smith", icon: "person.fill")
+                        FormTextField(label: "Specialty", text: $specialty, placeholder: "e.g. Cardiologist", icon: "stethoscope")
+                    }
+                    FormSection(title: "Contact", dotColor: Color.amberStart) {
+                        FormTextField(label: "Phone", text: $phone, placeholder: "Optional", icon: "phone.fill", keyboardType: .phonePad)
+                        FormTextField(label: "Email", text: $email, placeholder: "Optional", icon: "envelope.fill", keyboardType: .emailAddress)
+                        FormTextField(label: "Address", text: $address, placeholder: "Optional", icon: "mappin.circle.fill")
                     }
                 }
-
-                Section("Doctor Info") {
-                    TextField("Full Name", text: $name)
-                    TextField("Specialty", text: $specialty)
-                }
-
-                Section("Contact") {
-                    TextField("Phone", text: $phone).keyboardType(.phonePad)
-                    TextField("Email", text: $email).keyboardType(.emailAddress)
-                    TextField("Address", text: $address)
-                }
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
+                .padding(.bottom, 40)
             }
+            .background(Color.bg)
+            .scrollDismissesKeyboard(.interactively)
             .navigationTitle("Add Doctor")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -472,17 +472,24 @@ struct EditDoctorView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Doctor Info") {
-                    TextField("Full Name", text: $name)
-                    TextField("Specialty", text: $specialty)
+            ScrollView {
+                VStack(spacing: 20) {
+                    FormSection(title: "Doctor Info", dotColor: Color.amberStart) {
+                        FormTextField(label: "Full Name", text: $name, placeholder: "Dr. Jane Smith", icon: "person.fill")
+                        FormTextField(label: "Specialty", text: $specialty, placeholder: "e.g. Cardiologist", icon: "stethoscope")
+                    }
+                    FormSection(title: "Contact", dotColor: Color.amberStart) {
+                        FormTextField(label: "Phone", text: $phone, placeholder: "Optional", icon: "phone.fill", keyboardType: .phonePad)
+                        FormTextField(label: "Email", text: $email, placeholder: "Optional", icon: "envelope.fill", keyboardType: .emailAddress)
+                        FormTextField(label: "Address", text: $address, placeholder: "Optional", icon: "mappin.circle.fill")
+                    }
                 }
-                Section("Contact") {
-                    TextField("Phone", text: $phone).keyboardType(.phonePad)
-                    TextField("Email", text: $email).keyboardType(.emailAddress)
-                    TextField("Address", text: $address)
-                }
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
+                .padding(.bottom, 40)
             }
+            .background(Color.bg)
+            .scrollDismissesKeyboard(.interactively)
             .navigationTitle("Edit Doctor")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
