@@ -367,21 +367,32 @@ struct OnboardingView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) { bottomNavBar }
     }
 
-    private func handleSkip() {
+    private func attemptCompleteOnboarding() {
         if !notificationsEnabled && !skipWarningShown {
             skipWarningShown = true
             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { showSkipWarning = true }
-            if !isLastPage {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                    currentPage = onboardingPages.count - 1
-                }
-            }
             Task {
                 try? await Task.sleep(for: .seconds(4))
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { showSkipWarning = false }
             }
         } else {
             withAnimation(.easeInOut(duration: 0.25)) { hasCompletedOnboarding = true }
+        }
+    }
+
+    private func handleSkip() {
+        if !notificationsEnabled && !skipWarningShown && !isLastPage {
+            skipWarningShown = true
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { showSkipWarning = true }
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                currentPage = onboardingPages.count - 1
+            }
+            Task {
+                try? await Task.sleep(for: .seconds(4))
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { showSkipWarning = false }
+            }
+        } else {
+            attemptCompleteOnboarding()
         }
     }
 
@@ -392,7 +403,7 @@ struct OnboardingView: View {
                 if currentPage < onboardingPages.count - 1 {
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { currentPage += 1 }
                 } else {
-                    withAnimation(.easeInOut(duration: 0.3)) { hasCompletedOnboarding = true }
+                    attemptCompleteOnboarding()
                 }
             } label: {
                 Text(isLastPage ? "Get Started" : "Next")
