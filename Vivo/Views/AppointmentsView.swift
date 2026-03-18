@@ -566,36 +566,40 @@ enum AppointmentNotifications {
         center.removePendingNotificationRequests(withIdentifiers: ["\(base)-day", "\(base)-hour"])
 
         let now = Date()
+        let title = appointment.title
         let doctorPart = appointment.displayDoctorName.isEmpty ? "" : " with \(appointment.displayDoctorName)"
+        let date = appointment.date
 
-        // 1 day before
-        if let dayBefore = Calendar.current.date(byAdding: .day, value: -1, to: appointment.date),
-           dayBefore > now {
-            let content = UNMutableNotificationContent()
-            content.title = "Appointment tomorrow"
-            content.body = "\(appointment.title)\(doctorPart)"
-            content.sound = .default
-            let comps = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: dayBefore)
-            center.add(UNNotificationRequest(
-                identifier: "\(base)-day",
-                content: content,
-                trigger: UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
-            ))
-        }
+        NotificationService.ensureAuthorizedThenSchedule { center in
+            // 1 day before
+            if let dayBefore = Calendar.current.date(byAdding: .day, value: -1, to: date),
+               dayBefore > now {
+                let content = UNMutableNotificationContent()
+                content.title = "Appointment tomorrow"
+                content.body = "\(title)\(doctorPart)"
+                content.sound = .default
+                let comps = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: dayBefore)
+                center.add(UNNotificationRequest(
+                    identifier: "\(base)-day",
+                    content: content,
+                    trigger: UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
+                ))
+            }
 
-        // 1 hour before
-        if let hourBefore = Calendar.current.date(byAdding: .hour, value: -1, to: appointment.date),
-           hourBefore > now {
-            let content = UNMutableNotificationContent()
-            content.title = "Appointment in 1 hour"
-            content.body = "\(appointment.title)\(doctorPart)"
-            content.sound = .default
-            let comps = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: hourBefore)
-            center.add(UNNotificationRequest(
-                identifier: "\(base)-hour",
-                content: content,
-                trigger: UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
-            ))
+            // 1 hour before
+            if let hourBefore = Calendar.current.date(byAdding: .hour, value: -1, to: date),
+               hourBefore > now {
+                let content = UNMutableNotificationContent()
+                content.title = "Appointment in 1 hour"
+                content.body = "\(title)\(doctorPart)"
+                content.sound = .default
+                let comps = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: hourBefore)
+                center.add(UNNotificationRequest(
+                    identifier: "\(base)-hour",
+                    content: content,
+                    trigger: UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
+                ))
+            }
         }
     }
 
