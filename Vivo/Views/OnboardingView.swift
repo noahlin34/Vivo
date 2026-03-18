@@ -150,6 +150,8 @@ private struct SkipWarningToast: View {
 private struct OnboardingPageView: View {
     let page: OnboardingPage
     @Binding var notificationsEnabled: Bool
+    @State private var notificationsDenied: Bool = false
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         Group {
@@ -253,17 +255,29 @@ private struct OnboardingPageView: View {
                 }
                 VStack(spacing: 12) {
                     Button {
-                        UNUserNotificationCenter.current()
-                            .requestAuthorization(options: [.alert, .sound]) { granted, _ in
-                                DispatchQueue.main.async { notificationsEnabled = granted }
+                        if notificationsDenied {
+                            if let url = URL(string: UIApplication.openSettingsURLString) {
+                                UIApplication.shared.open(url)
                             }
+                        } else {
+                            UNUserNotificationCenter.current()
+                                .requestAuthorization(options: [.alert, .sound]) { granted, _ in
+                                    DispatchQueue.main.async {
+                                        notificationsEnabled = granted
+                                        if !granted { notificationsDenied = true }
+                                    }
+                                }
+                        }
                     } label: {
                         HStack(spacing: 8) {
                             if notificationsEnabled {
                                 Image(systemName: "checkmark")
                                     .font(.system(size: 15, weight: .semibold))
+                            } else if notificationsDenied {
+                                Image(systemName: "arrow.up.right")
+                                    .font(.system(size: 15, weight: .semibold))
                             }
-                            Text(notificationsEnabled ? "Notifications Enabled" : "Enable Notifications")
+                            Text(notificationsEnabled ? "Notifications Enabled" : notificationsDenied ? "Open Settings" : "Enable Notifications")
                                 .font(.system(size: 17, weight: .semibold))
                         }
                         .foregroundStyle(.white)
@@ -272,6 +286,8 @@ private struct OnboardingPageView: View {
                         .background {
                             if notificationsEnabled {
                                 Color.mutedFg
+                            } else if notificationsDenied {
+                                LinearGradient(colors: [Color.amberStart, Color.amberEnd], startPoint: .leading, endPoint: .trailing)
                             } else {
                                 LinearGradient(colors: page.gradient, startPoint: .leading, endPoint: .trailing)
                             }
@@ -291,12 +307,18 @@ private struct OnboardingPageView: View {
             Spacer()
         }
         .padding(.horizontal, 32)
-        .onAppear {
-            UNUserNotificationCenter.current().getNotificationSettings { settings in
-                DispatchQueue.main.async {
-                    notificationsEnabled = settings.authorizationStatus == .authorized
-                        || settings.authorizationStatus == .provisional
-                }
+        .onAppear { checkNotificationStatus() }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active { checkNotificationStatus() }
+        }
+    }
+
+    private func checkNotificationStatus() {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            DispatchQueue.main.async {
+                notificationsEnabled = settings.authorizationStatus == .authorized
+                    || settings.authorizationStatus == .provisional
+                notificationsDenied = settings.authorizationStatus == .denied
             }
         }
     }
