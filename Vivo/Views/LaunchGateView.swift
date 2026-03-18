@@ -19,18 +19,15 @@ struct LaunchGateView: View {
     @Environment(\.modelContext) private var modelContext
 
     @State private var launchState: LaunchState = .checking
-    @State private var showCheckingUI: Bool = false
+    @State private var logoVisible: Bool = false
+    @State private var statusVisible: Bool = false
 
     var body: some View {
         Group {
             switch launchState {
             case .checking:
-                if showCheckingUI {
-                    checkingView
-                        .transition(.opacity)
-                } else {
-                    Color.bg.ignoresSafeArea()
-                }
+                splashView
+                    .transition(.opacity)
             case .onboarding:
                 OnboardingView()
                     .transition(.opacity)
@@ -43,7 +40,6 @@ struct LaunchGateView: View {
             }
         }
         .animation(.easeInOut(duration: 0.25), value: launchState)
-        .animation(.easeInOut(duration: 0.4), value: showCheckingUI)
         .onAppear {
             guard launchState == .checking else { return }
 
@@ -63,13 +59,17 @@ struct LaunchGateView: View {
                 return
             }
 
-            // After 2s, reveal the checking screen with a spinner + escape hatch
+            // Spring the logo in after 0.3s (first frame stays as bare Color.bg)
             Task {
-                try? await Task.sleep(for: .seconds(2))
+                try? await Task.sleep(for: .seconds(0.3))
+                await MainActor.run { logoVisible = true }
+            }
+
+            // After 2.5s show spinner + escape hatch if still checking
+            Task {
+                try? await Task.sleep(for: .seconds(2.5))
                 await MainActor.run {
-                    if launchState == .checking {
-                        showCheckingUI = true
-                    }
+                    if launchState == .checking { statusVisible = true }
                 }
             }
         }
@@ -93,7 +93,7 @@ struct LaunchGateView: View {
         }
     }
 
-    private var checkingView: some View {
+    private var splashView: some View {
         ZStack {
             Color.bg.ignoresSafeArea()
 
@@ -102,27 +102,38 @@ struct LaunchGateView: View {
 
                 VStack(spacing: 24) {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 30, style: .continuous)
+                        RoundedRectangle(cornerRadius: 32, style: .continuous)
                             .fill(LinearGradient(
-                                colors: [Color.cyanStart, Color.cyanEnd],
+                                colors: [Color.tealStart, Color.tealEnd],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ))
-                            .frame(width: 104, height: 104)
+                            .frame(width: 120, height: 120)
                             .warmShadowLg()
-                        Image(systemName: "icloud.fill")
-                            .font(.system(size: 44))
+                        Image(systemName: "heart.fill")
+                            .font(.system(size: 52))
                             .foregroundStyle(.white)
                     }
 
-                    Text("Looking for your data…")
-                        .font(.system(size: 28, weight: .regular, design: .serif))
+                    Text("Vivo")
+                        .font(.system(size: 42, weight: .regular, design: .serif))
                         .foregroundStyle(Color.nearBlack)
-                        .multilineTextAlignment(.center)
 
-                    ProgressView()
-                        .tint(Color.mutedFg)
+                    if statusVisible {
+                        VStack(spacing: 12) {
+                            ProgressView()
+                                .tint(Color.mutedFg)
+                            Text("Looking for your data…")
+                                .font(.system(size: 17))
+                                .foregroundStyle(Color.mutedFg)
+                        }
+                        .transition(.opacity)
+                    }
                 }
+                .scaleEffect(logoVisible ? 1 : 0.8)
+                .opacity(logoVisible ? 1 : 0)
+                .animation(.spring(response: 0.5, dampingFraction: 0.7), value: logoVisible)
+                .animation(.easeInOut(duration: 0.4), value: statusVisible)
 
                 Spacer()
                 Spacer()
@@ -130,20 +141,24 @@ struct LaunchGateView: View {
             .padding(.horizontal, 32)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            VStack(spacing: 0) {
-                Button {
-                    launchState = .onboarding
-                } label: {
-                    Text("Start fresh")
-                        .font(.system(size: 17, weight: .medium))
-                        .foregroundStyle(Color.mutedFg)
+            if statusVisible {
+                VStack(spacing: 0) {
+                    Button {
+                        launchState = .onboarding
+                    } label: {
+                        Text("Start fresh")
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundStyle(Color.mutedFg)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
+                .padding(.top, 16)
+                .padding(.bottom, 40)
+                .background(Color.bg)
+                .transition(.opacity)
             }
-            .padding(.top, 16)
-            .padding(.bottom, 40)
-            .background(Color.bg)
         }
+        .animation(.easeInOut(duration: 0.4), value: statusVisible)
     }
 
     private func hasExistingData() -> Bool {
