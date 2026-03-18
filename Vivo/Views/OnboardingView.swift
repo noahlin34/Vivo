@@ -291,6 +291,14 @@ private struct OnboardingPageView: View {
             Spacer()
         }
         .padding(.horizontal, 32)
+        .onAppear {
+            UNUserNotificationCenter.current().getNotificationSettings { settings in
+                DispatchQueue.main.async {
+                    notificationsEnabled = settings.authorizationStatus == .authorized
+                        || settings.authorizationStatus == .provisional
+                }
+            }
+        }
     }
 }
 
