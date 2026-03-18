@@ -7,7 +7,7 @@ import Foundation
 import CoreData
 import CloudKit
 
-enum SyncState {
+enum SyncState: Equatable {
     case idle
     case syncing
     case synced(Date)
