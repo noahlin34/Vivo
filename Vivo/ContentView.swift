@@ -11,6 +11,8 @@ import UIKit
 
 struct ContentView: View {
     @State private var selectedTab: Int = 0
+    @State private var notificationStatus = NotificationStatusMonitor()
+    @Environment(\.scenePhase) private var scenePhase
     @Query private var medications: [Medication]
     @Query private var appointments: [Appointment]
 
@@ -26,12 +28,17 @@ struct ContentView: View {
             VitalsView().tag(3)
             NotesView().tag(4)
         }
+        .environment(notificationStatus)
         .tint(Color.primaryTeal)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             CustomTabBar(selectedTab: $selectedTab)
         }
         .onAppear {
             rescheduleAllNotifications()
+            notificationStatus.refresh()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active { notificationStatus.refresh() }
         }
     }
 
