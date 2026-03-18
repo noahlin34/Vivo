@@ -4,21 +4,16 @@
 //
 //  Created by Noah Lin  on 2026-02-19.
 //
-//  CloudKit sync requires:
-//  1. The iCloud container "iCloud.com.noahlin.Vivo" must be created in the
-//     Apple Developer Portal under Certificates, Identifiers & Profiles → Identifiers → iCloud Containers.
-//  2. The app's App ID must have iCloud (CloudKit) capability enabled.
-//  3. Testing on a physical device signed into iCloud.
-//
 
 import SwiftUI
 import SwiftData
 
 @main
 struct VivoApp: App {
-    @State private var syncMonitor = SyncMonitor()
+    let sharedModelContainer: ModelContainer
+    @State private var containerError: String? = nil
 
-    var sharedModelContainer: ModelContainer = {
+    init() {
         let schema = Schema([
             Medication.self,
             Doctor.self,
@@ -26,29 +21,35 @@ struct VivoApp: App {
             HealthNote.self,
             VitalRecord.self,
         ])
-        // CloudKit sync only works on a physical device with the iCloud container
-        // configured in the Apple Developer Portal. Disable it on the simulator
-        // to avoid launch lag, AttributeGraph cycles, and CloudKit export errors.
-        #if targetEnvironment(simulator)
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-        #else
-        let modelConfiguration = ModelConfiguration(
-            schema: schema,
-            isStoredInMemoryOnly: false,
-            cloudKitDatabase: .private("iCloud.com.noahlin.Vivo")
-        )
-        #endif
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            sharedModelContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+            // Provide a non-nil placeholder so the stored property is always initialized.
+            // The error state is surfaced via the containerError string.
+            sharedModelContainer = try! ModelContainer(for: Schema([]), configurations: [ModelConfiguration(isStoredInMemoryOnly: true)])
+            containerError = error.localizedDescription
         }
-    }()
+    }
 
     var body: some Scene {
         WindowGroup {
-            LaunchGateView()
-                .environment(syncMonitor)
+            if let errorMessage = containerError {
+                VStack(spacing: 20) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 48))
+                        .foregroundStyle(.orange)
+                    Text("Unable to load data")
+                        .font(.system(size: 22, weight: .semibold))
+                    Text(errorMessage)
+                        .font(.system(size: 14))
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                }
+            } else {
+                LaunchGateView()
+            }
         }
         .modelContainer(sharedModelContainer)
     }
