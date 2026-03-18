@@ -60,6 +60,7 @@ struct HomeView: View {
         .ignoresSafeArea(edges: .top)
         .sheet(item: $selectedMed) { med in
             MedicationDetailSheet(medication: med) {
+                MedicationNotifications.cancel(for: med)
                 modelContext.delete(med)
                 selectedMed = nil
             }
