@@ -368,9 +368,14 @@ struct OnboardingView: View {
     }
 
     private func handleSkip() {
-        if isLastPage && !skipWarningShown {
+        if !notificationsEnabled && !skipWarningShown {
             skipWarningShown = true
             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { showSkipWarning = true }
+            if !isLastPage {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    currentPage = onboardingPages.count - 1
+                }
+            }
             Task {
                 try? await Task.sleep(for: .seconds(4))
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { showSkipWarning = false }
