@@ -720,18 +720,24 @@ enum MedicationNotifications {
         default:                  offsets = [0]
         }
 
-        for (i, offset) in offsets.enumerated() {
-            let fireDate = Calendar.current.date(byAdding: .hour, value: offset, to: medication.scheduledTime) ?? medication.scheduledTime
-            let components = Calendar.current.dateComponents([.hour, .minute], from: fireDate)
+        let name = medication.name
+        let dosage = medication.dosage
+        let scheduledTime = medication.scheduledTime
 
-            let content = UNMutableNotificationContent()
-            content.title = "Time to take \(medication.name)"
-            content.body = medication.dosage
-            content.sound = .default
+        NotificationService.ensureAuthorizedThenSchedule { center in
+            for (i, offset) in offsets.enumerated() {
+                let fireDate = Calendar.current.date(byAdding: .hour, value: offset, to: scheduledTime) ?? scheduledTime
+                let components = Calendar.current.dateComponents([.hour, .minute], from: fireDate)
 
-            let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
-            let request = UNNotificationRequest(identifier: "\(base)-\(i)", content: content, trigger: trigger)
-            center.add(request)
+                let content = UNMutableNotificationContent()
+                content.title = "Time to take \(name)"
+                content.body = dosage
+                content.sound = .default
+
+                let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
+                let request = UNNotificationRequest(identifier: "\(base)-\(i)", content: content, trigger: trigger)
+                center.add(request)
+            }
         }
     }
 
