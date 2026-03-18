@@ -159,6 +159,7 @@ struct AppointmentDetailSheet: View {
     let appointment: Appointment
     let onDelete: () -> Void
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     @State private var showEdit = false
     @State private var showLinkedDoctor = false
 
@@ -247,7 +248,10 @@ struct AppointmentDetailSheet: View {
             }
             .sheet(isPresented: $showLinkedDoctor) {
                 if let doc = appointment.doctor {
-                    DoctorDetailSheet(doctor: doc) { }
+                    DoctorDetailSheet(doctor: doc) {
+                        modelContext.delete(doc)
+                        showLinkedDoctor = false
+                    }
                 }
             }
         }
