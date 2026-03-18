@@ -160,8 +160,24 @@ struct AppointmentDetailSheet: View {
     let onDelete: () -> Void
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(NotificationStatusMonitor.self) private var notificationStatus
     @State private var showEdit = false
     @State private var showLinkedDoctor = false
+
+    private var reminderValue: String {
+        let now = Date()
+        let apptDate = appointment.date
+        guard apptDate > now else { return "No reminders (past)" }
+        let dayBefore = apptDate.addingTimeInterval(-86400)
+        let hourBefore = apptDate.addingTimeInterval(-3600)
+        if dayBefore > now {
+            return "1 day before · 1 hour before"
+        } else if hourBefore > now {
+            return "1 hour before"
+        } else {
+            return "No reminders (past)"
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -218,6 +234,7 @@ struct AppointmentDetailSheet: View {
                             .background(Color.bg)
                             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                         }
+                        reminderRow
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 16)
@@ -257,6 +274,40 @@ struct AppointmentDetailSheet: View {
         }
         .presentationDetents([.medium])
         .presentationCornerRadius(24)
+    }
+
+    var reminderRow: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "bell.fill")
+                .font(.system(size: 15))
+                .foregroundStyle(Color.primaryTeal)
+                .frame(width: 36, height: 36)
+                .background(Color.primaryTeal.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Reminders")
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color.mutedFg)
+                HStack(spacing: 5) {
+                    Text(reminderValue)
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color.nearBlack)
+                    if notificationStatus.isDenied && reminderValue != "No reminders (past)" {
+                        Image(systemName: "bell.slash")
+                            .font(.system(size: 12))
+                            .foregroundStyle(Color.amberStart)
+                        Text("(off)")
+                            .font(.system(size: 12))
+                            .foregroundStyle(Color.amberStart)
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(Color.bg)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     func detailRow(icon: String, iconColor: Color, label: String, value: String) -> some View {
