@@ -16,7 +16,6 @@ struct HomeView: View {
     @Query(sort: \HealthNote.createdAt, order: .reverse) private var notes: [HealthNote]
     @Query(sort: \VitalRecord.recordedAt, order: .reverse) private var vitals: [VitalRecord]
 
-    @Environment(SyncMonitor.self) private var syncMonitor
     @State private var topSafeArea: CGFloat = 0
     @State private var selectedMed: Medication? = nil
     @State private var selectedAppt: Appointment? = nil
@@ -110,7 +109,6 @@ struct HomeView: View {
                         .font(.system(size: 13))
                         .foregroundStyle(.white.opacity(0.7))
                     Spacer()
-                    syncIconButton
                 }
                 .padding(.top, topSafeArea + 16)
 
@@ -239,86 +237,6 @@ struct HomeView: View {
         .background(.white.opacity(0.15))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    // MARK: - Sync Row
-
-    private var syncIsUnavailable: Bool {
-        if case .unavailable = syncMonitor.state { return true }
-        return false
-    }
-
-    @ViewBuilder
-    private var syncIconButton: some View {
-        if !syncIsUnavailable {
-            Button {
-                try? modelContext.save()
-            } label: {
-                HStack(spacing: 5) {
-                    syncIconImage
-                    syncStatusLabel
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var syncIconImage: some View {
-        switch syncMonitor.state {
-        case .idle:
-            Image(systemName: "icloud.fill")
-                .font(.system(size: 14))
-                .foregroundStyle(.white.opacity(0.6))
-        case .synced(_):
-            Image(systemName: "icloud.fill")
-                .font(.system(size: 14))
-                .foregroundStyle(.white.opacity(0.6))
-        case .syncing:
-            SyncSpinnerIcon()
-        case .error(_):
-            Image(systemName: "exclamationmark.icloud.fill")
-                .font(.system(size: 14))
-                .foregroundStyle(Color.amberStart)
-        case .noAccount:
-            Image(systemName: "xmark.icloud.fill")
-                .font(.system(size: 14))
-                .foregroundStyle(Color.amberStart)
-        case .unavailable:
-            EmptyView()
-        }
-    }
-
-    @ViewBuilder
-    private var syncStatusLabel: some View {
-        switch syncMonitor.state {
-        case .synced(let date):
-            TimelineView(.periodic(from: .now, by: 60)) { _ in
-                Text(relativeSync(date))
-                    .font(.system(size: 11))
-                    .foregroundStyle(.white.opacity(0.5))
-            }
-        case .syncing:
-            Text("Syncing...")
-                .font(.system(size: 11))
-                .foregroundStyle(.white.opacity(0.5))
-        case .error(_):
-            Text("Sync error")
-                .font(.system(size: 11))
-                .foregroundStyle(Color.amberStart.opacity(0.8))
-        case .noAccount:
-            Text("No iCloud")
-                .font(.system(size: 11))
-                .foregroundStyle(Color.amberStart.opacity(0.8))
-        default:
-            EmptyView()
-        }
-    }
-
-    private func relativeSync(_ date: Date) -> String {
-        guard Date().timeIntervalSince(date) >= 60 else { return "Just now" }
-        let f = RelativeDateTimeFormatter()
-        f.unitsStyle = .short
-        return f.localizedString(for: date, relativeTo: Date())
     }
 
     // MARK: - Main Content
@@ -697,24 +615,3 @@ struct HomeView: View {
     }
 
 }
-
-// MARK: - Sync Support Views
-
-private struct SyncSpinnerIcon: View {
-    var size: CGFloat = 14
-    var color: Color = .white
-    @State private var angle: Double = 0
-
-    var body: some View {
-        Image(systemName: "arrow.triangle.2.circlepath")
-            .font(.system(size: size))
-            .foregroundStyle(color)
-            .rotationEffect(.degrees(angle))
-            .onAppear {
-                withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
-                    angle = 360
-                }
-            }
-    }
-}
-
