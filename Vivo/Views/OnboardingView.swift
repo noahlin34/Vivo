@@ -86,20 +86,7 @@ private let onboardingPages: [OnboardingPage] = [
         ],
         kind: .feature
     ),
-    // 5 — iCloud Sync (new)
-    OnboardingPage(
-        icon: "icloud.fill",
-        gradient: [Color.cyanStart, Color.cyanEnd],
-        title: "Private and synced",
-        body: "",
-        bullets: [
-            FeatureBullet(icon: "lock.fill", text: "Data stored privately in your iCloud — only you can see it"),
-            FeatureBullet(icon: "arrow.triangle.2.circlepath", text: "Syncs automatically across all your devices"),
-            FeatureBullet(icon: "wifi.slash", text: "Works offline — changes sync when you reconnect"),
-        ],
-        kind: .feature
-    ),
-    // 6 — Notifications (new)
+    // 5 — Notifications
     OnboardingPage(
         icon: "bell.badge.fill",
         gradient: [Color.tealStart, Color.tealEnd],
