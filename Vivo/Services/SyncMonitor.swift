@@ -18,6 +18,7 @@ enum SyncState {
 
 @Observable final class SyncMonitor {
     var state: SyncState = .idle
+    var hasCompletedFirstImport: Bool = false
 
     var lastSyncDate: Date? {
         if case .synced(let date) = state { return date }
@@ -61,6 +62,9 @@ enum SyncState {
                 self.state = .error(error.localizedDescription)
             } else {
                 self.state = .synced(event.endDate ?? Date())
+                if event.type == .import {
+                    self.hasCompletedFirstImport = true
+                }
             }
         }
     }
