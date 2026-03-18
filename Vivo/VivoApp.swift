@@ -16,7 +16,6 @@ import SwiftData
 
 @main
 struct VivoApp: App {
-    @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
     @State private var syncMonitor = SyncMonitor()
 
     var sharedModelContainer: ModelContainer = {
@@ -48,16 +47,8 @@ struct VivoApp: App {
 
     var body: some Scene {
         WindowGroup {
-            Group {
-                if hasCompletedOnboarding {
-                    ContentView()
-                        .transition(.opacity)
-                } else {
-                    OnboardingView()
-                        .transition(.opacity)
-                }
-            }
-            .environment(syncMonitor)
+            LaunchGateView()
+                .environment(syncMonitor)
         }
         .modelContainer(sharedModelContainer)
     }
