@@ -292,9 +292,11 @@ struct HomeView: View {
     private var syncStatusLabel: some View {
         switch syncMonitor.state {
         case .synced(let date):
-            Text(RelativeDateTimeFormatter().localizedString(for: date, relativeTo: Date()))
-                .font(.system(size: 11))
-                .foregroundStyle(.white.opacity(0.5))
+            TimelineView(.periodic(from: .now, by: 60)) { _ in
+                Text(relativeSync(date))
+                    .font(.system(size: 11))
+                    .foregroundStyle(.white.opacity(0.5))
+            }
         case .syncing:
             Text("Syncing...")
                 .font(.system(size: 11))
@@ -310,6 +312,13 @@ struct HomeView: View {
         default:
             EmptyView()
         }
+    }
+
+    private func relativeSync(_ date: Date) -> String {
+        guard Date().timeIntervalSince(date) >= 60 else { return "Just now" }
+        let f = RelativeDateTimeFormatter()
+        f.unitsStyle = .short
+        return f.localizedString(for: date, relativeTo: Date())
     }
 
     // MARK: - Main Content
