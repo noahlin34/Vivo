@@ -205,11 +205,38 @@ struct MedicationDetailSheet: View {
     let medication: Medication
     let onDelete: () -> Void
     @Environment(\.dismiss) private var dismiss
+    @Environment(NotificationStatusMonitor.self) private var notificationStatus
     @State private var showEdit = false
     @State private var showRefill = false
     @State private var refillAmount = 30
 
     private var color: Color { .medColor(medication.colorIndex) }
+
+    private var reminderText: String {
+        let base = medication.scheduledTime
+        let cal = Calendar.current
+        let hour = cal.component(.hour, from: base)
+        let minute = cal.component(.minute, from: base)
+
+        func timeString(addingHours offset: Int) -> String {
+            let components = DateComponents(hour: (hour + offset) % 24, minute: minute)
+            let date = cal.nextDate(after: Date(), matching: components, matchingPolicy: .nextTime) ?? Date()
+            return date.formatted(.dateTime.hour().minute())
+        }
+
+        switch medication.frequency {
+        case "As needed":
+            return "No reminders"
+        case "Once daily":
+            return "Daily at \(timeString(addingHours: 0))"
+        case "Twice daily":
+            return "Daily at \(timeString(addingHours: 0)), \(timeString(addingHours: 12))"
+        case "Three times daily":
+            return "Daily at \(timeString(addingHours: 0)), \(timeString(addingHours: 8)), \(timeString(addingHours: 16))"
+        default:
+            return "No reminders"
+        }
+    }
 
     private var last7Days: [Date] {
         let cal = Calendar.current
@@ -260,6 +287,10 @@ struct MedicationDetailSheet: View {
                         detailRow(label: "Frequency", value: medication.frequency)
                         Divider().padding(.leading, 16)
                         detailRow(label: "Time", value: medication.scheduledTime.formatted(.dateTime.hour().minute()))
+                        if medication.frequency != "As needed" {
+                            Divider().padding(.leading, 16)
+                            reminderRow
+                        }
                         if !medication.notes.isEmpty {
                             Divider().padding(.leading, 16)
                             detailRow(label: "Notes", value: medication.notes)
@@ -407,6 +438,31 @@ struct MedicationDetailSheet: View {
             }
             .presentationDetents([.medium, .large])
             .presentationCornerRadius(24)
+    }
+
+    var reminderRow: some View {
+        HStack {
+            Text("Reminders")
+                .font(.system(size: 12))
+                .foregroundStyle(Color.mutedFg)
+            Spacer()
+            HStack(spacing: 5) {
+                Text(reminderText)
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color.nearBlack)
+                    .multilineTextAlignment(.trailing)
+                if notificationStatus.isDenied {
+                    Image(systemName: "bell.slash")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.amberStart)
+                    Text("(off)")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.amberStart)
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
     }
 
     func detailRow(label: String, value: String) -> some View {
