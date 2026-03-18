@@ -6,10 +6,13 @@
 //
 
 import SwiftUI
+import SwiftData
 import UIKit
 
 struct ContentView: View {
     @State private var selectedTab: Int = 0
+    @Query private var medications: [Medication]
+    @Query private var appointments: [Appointment]
 
     init() {
         UITabBar.appearance().isHidden = true
@@ -26,6 +29,19 @@ struct ContentView: View {
         .tint(Color.primaryTeal)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             CustomTabBar(selectedTab: $selectedTab)
+        }
+        .onAppear {
+            rescheduleAllNotifications()
+        }
+    }
+
+    private func rescheduleAllNotifications() {
+        for med in medications {
+            MedicationNotifications.schedule(for: med)
+        }
+        let now = Date()
+        for appt in appointments where appt.date > now {
+            AppointmentNotifications.schedule(for: appt)
         }
     }
 }
