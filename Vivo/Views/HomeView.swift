@@ -17,7 +17,6 @@ struct HomeView: View {
     @Query(sort: \VitalRecord.recordedAt, order: .reverse) private var vitals: [VitalRecord]
 
     @Environment(SyncMonitor.self) private var syncMonitor
-    @State private var showSyncPopover: Bool = false
     @State private var topSafeArea: CGFloat = 0
     @State private var selectedMed: Medication? = nil
     @State private var selectedAppt: Appointment? = nil
@@ -242,7 +241,7 @@ struct HomeView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    // MARK: - Sync Icon
+    // MARK: - Sync Row
 
     private var syncIsUnavailable: Bool {
         if case .unavailable = syncMonitor.state { return true }
@@ -252,8 +251,14 @@ struct HomeView: View {
     @ViewBuilder
     private var syncIconButton: some View {
         if !syncIsUnavailable {
-            Button { showSyncPopover = true } label: { syncIconImage }
-                .popover(isPresented: $showSyncPopover) { SyncPopoverContent() }
+            Button {
+                try? modelContext.save()
+            } label: {
+                HStack(spacing: 5) {
+                    syncIconImage
+                    syncStatusLabel
+                }
+            }
         }
     }
 
@@ -279,6 +284,30 @@ struct HomeView: View {
                 .font(.system(size: 14))
                 .foregroundStyle(Color.amberStart)
         case .unavailable:
+            EmptyView()
+        }
+    }
+
+    @ViewBuilder
+    private var syncStatusLabel: some View {
+        switch syncMonitor.state {
+        case .synced(let date):
+            Text(RelativeDateTimeFormatter().localizedString(for: date, relativeTo: Date()))
+                .font(.system(size: 11))
+                .foregroundStyle(.white.opacity(0.5))
+        case .syncing:
+            Text("Syncing...")
+                .font(.system(size: 11))
+                .foregroundStyle(.white.opacity(0.5))
+        case .error(_):
+            Text("Sync error")
+                .font(.system(size: 11))
+                .foregroundStyle(Color.amberStart.opacity(0.8))
+        case .noAccount:
+            Text("No iCloud")
+                .font(.system(size: 11))
+                .foregroundStyle(Color.amberStart.opacity(0.8))
+        default:
             EmptyView()
         }
     }
@@ -680,114 +709,3 @@ private struct SyncSpinnerIcon: View {
     }
 }
 
-private struct SyncPopoverContent: View {
-    @Environment(\.modelContext) private var modelContext
-    @Environment(SyncMonitor.self) private var syncMonitor
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 12) {
-                statusIcon
-                    .frame(width: 22, height: 22)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(statusTitle)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Color.nearBlack)
-                    Text(statusSubtitle)
-                        .font(.system(size: 13))
-                        .foregroundStyle(Color.mutedFg)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer()
-            }
-
-            if showSyncButton {
-                Button {
-                    try? modelContext.save()
-                } label: {
-                    Text(syncButtonLabel)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(
-                            LinearGradient(
-                                colors: [Color.tealStart, Color.tealEnd],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                }
-                .disabled(syncMonitor.isSyncing)
-                .opacity(syncMonitor.isSyncing ? 0.5 : 1)
-            }
-        }
-        .padding(20)
-        .frame(minWidth: 240)
-        .background(Color.cardBg)
-    }
-
-    @ViewBuilder
-    private var statusIcon: some View {
-        switch syncMonitor.state {
-        case .idle:
-            Image(systemName: "icloud.fill")
-                .font(.system(size: 18))
-                .foregroundStyle(Color.primaryTeal)
-        case .synced(_):
-            Image(systemName: "icloud.fill")
-                .font(.system(size: 18))
-                .foregroundStyle(Color.primaryTeal)
-        case .syncing:
-            SyncSpinnerIcon(size: 18, color: Color.primaryTeal)
-        case .error(_):
-            Image(systemName: "exclamationmark.icloud.fill")
-                .font(.system(size: 18))
-                .foregroundStyle(Color.amberStart)
-        case .noAccount:
-            Image(systemName: "xmark.icloud.fill")
-                .font(.system(size: 18))
-                .foregroundStyle(Color.amberStart)
-        case .unavailable:
-            EmptyView()
-        }
-    }
-
-    private var statusTitle: String {
-        switch syncMonitor.state {
-        case .idle: return "iCloud Sync"
-        case .syncing: return "Syncing to iCloud..."
-        case .synced(_): return "Synced to iCloud"
-        case .error(_): return "Sync Error"
-        case .noAccount: return "iCloud Unavailable"
-        case .unavailable: return ""
-        }
-    }
-
-    private var statusSubtitle: String {
-        switch syncMonitor.state {
-        case .idle: return "Waiting for sync"
-        case .syncing: return "Uploading your data"
-        case .synced(let date):
-            let formatter = RelativeDateTimeFormatter()
-            formatter.unitsStyle = .short
-            return "Last synced \(formatter.localizedString(for: date, relativeTo: Date()))"
-        case .error(let message): return message
-        case .noAccount: return "Sign in to iCloud in Settings to sync your data"
-        case .unavailable: return ""
-        }
-    }
-
-    private var showSyncButton: Bool {
-        switch syncMonitor.state {
-        case .noAccount, .unavailable: return false
-        default: return true
-        }
-    }
-
-    private var syncButtonLabel: String {
-        if case .error = syncMonitor.state { return "Try Again" }
-        return "Sync Now"
-    }
-}
