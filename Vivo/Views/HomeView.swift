@@ -22,6 +22,8 @@ struct HomeView: View {
     @State private var selectedDoctor: Doctor? = nil
     @State private var selectedNote: HealthNote? = nil
     @State private var selectedVital: VitalRecord? = nil
+    @State private var bannerDismissed: Bool = false
+    @Environment(NotificationStatusMonitor.self) private var notificationStatus
 
     private var allUpcomingAppointments: [Appointment] {
         appointments.filter { $0.date >= Calendar.current.startOfDay(for: Date()) }
@@ -93,6 +95,7 @@ struct HomeView: View {
         .onAppear {
             topSafeArea = (UIApplication.shared.connectedScenes.first as? UIWindowScene)?
                 .windows.first?.safeAreaInsets.top ?? 0
+            bannerDismissed = false
         }
     }
 
@@ -240,14 +243,74 @@ struct HomeView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    // MARK: - Notifications Banner
+
+    var notificationsBanner: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "bell.slash.fill")
+                .font(.system(size: 16))
+                .foregroundStyle(Color.amberStart)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Notifications Off")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Color.nearBlack)
+                Text("Reminders won't be delivered")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.mutedFg)
+            }
+
+            Spacer()
+
+            Button {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            } label: {
+                Text("Settings")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Color.amberStart)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.amberStart.opacity(0.12))
+                    .clipShape(Capsule())
+            }
+
+            Button {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    bannerDismissed = true
+                }
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Color.mutedFg)
+                    .frame(width: 24, height: 24)
+                    .background(Color.mutedBg)
+                    .clipShape(Circle())
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(Color.amberStart.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
     // MARK: - Main Content
 
     var mainContent: some View {
         VStack(spacing: 20) {
+            // Notifications denied banner
+            if notificationStatus.isDenied && !bannerDismissed {
+                notificationsBanner
+                    .padding(.horizontal, 20)
+                    .padding(.top, 16)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+
             // Quick Pills
             quickPillsSection
                 .padding(.horizontal, 20)
-                .padding(.top, 16)
+                .padding(.top, notificationStatus.isDenied && !bannerDismissed ? 0 : 16)
 
             // Today's Medications
             medsSection
