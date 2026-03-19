@@ -16,6 +16,7 @@ final class Medication {
     var notes: String = ""
     var takenDates: [Date] = []
     var pillCount: Int? = nil
+    var reminderOffset: Int = 0
     var createdAt: Date = Date()
 
     /// Number of doses required per day (0 = "As needed" — no target)
