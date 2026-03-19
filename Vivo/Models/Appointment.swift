@@ -16,6 +16,7 @@ final class Appointment {
     var displayDoctorName: String { doctor?.name ?? doctorName }
     var location: String = ""
     var notes: String = ""
+    var reminderOption: String = "1_day_1_hour"
     var createdAt: Date = Date()
 
     init(title: String, doctorName: String, date: Date, location: String = "", notes: String = "") {
