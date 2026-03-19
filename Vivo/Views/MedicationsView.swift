@@ -493,6 +493,7 @@ struct AddMedicationView: View {
     @State private var scheduledTime = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
     @State private var notes = ""
     @State private var colorIndex = 0
+    @State private var reminderOffset: Int = 0
     @State private var trackPillCount = false
     @State private var pillCount = 30
 
@@ -546,6 +547,39 @@ struct AddMedicationView: View {
                             .padding(.vertical, 12)
                             .background(Color.mutedBg.opacity(0.5))
                             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            if frequency != "As needed" {
+                                HStack(spacing: 10) {
+                                    Image(systemName: "bell.fill")
+                                        .font(.system(size: 14))
+                                        .foregroundStyle(Color.primaryTeal)
+                                        .frame(width: 20)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("Reminder")
+                                            .font(.system(size: 11, weight: .semibold))
+                                            .foregroundStyle(Color.mutedFg)
+                                        Menu {
+                                            ForEach(MedicationReminderOffset.allCases, id: \.rawValue) { option in
+                                                Button(option.label) { reminderOffset = option.rawValue }
+                                            }
+                                        } label: {
+                                            HStack {
+                                                Text(MedicationReminderOffset(rawValue: reminderOffset)?.label ?? "At dose time")
+                                                    .font(.system(size: 15))
+                                                    .foregroundStyle(Color.nearBlack)
+                                                Spacer()
+                                                Image(systemName: "chevron.up.chevron.down")
+                                                    .font(.system(size: 10))
+                                                    .foregroundStyle(Color.mutedFg.opacity(0.6))
+                                            }
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 12)
+                                .background(Color.mutedBg.opacity(0.5))
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            }
                         }
                         FormSection(title: "Color") {
                             FormColorPicker(selection: $colorIndex, colors: colorHexes, names: colorNames)
@@ -592,6 +626,7 @@ struct AddMedicationView: View {
             notes: notes.trimmingCharacters(in: .whitespaces)
         )
         med.pillCount = trackPillCount ? pillCount : nil
+        med.reminderOffset = reminderOffset
         modelContext.insert(med)
         MedicationNotifications.schedule(for: med)
         dismiss()
@@ -610,6 +645,7 @@ struct EditMedicationView: View {
     @State private var scheduledTime: Date
     @State private var colorIndex: Int
     @State private var notes: String
+    @State private var reminderOffset: Int
     @State private var trackPillCount: Bool
     @State private var pillCount: Int
 
@@ -625,6 +661,7 @@ struct EditMedicationView: View {
         _scheduledTime = State(initialValue: medication.scheduledTime)
         _colorIndex = State(initialValue: medication.colorIndex)
         _notes = State(initialValue: medication.notes)
+        _reminderOffset = State(initialValue: medication.reminderOffset)
         _trackPillCount = State(initialValue: medication.pillCount != nil)
         _pillCount = State(initialValue: medication.pillCount ?? 30)
     }
@@ -669,6 +706,39 @@ struct EditMedicationView: View {
                             .padding(.vertical, 12)
                             .background(Color.mutedBg.opacity(0.5))
                             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            if frequency != "As needed" {
+                                HStack(spacing: 10) {
+                                    Image(systemName: "bell.fill")
+                                        .font(.system(size: 14))
+                                        .foregroundStyle(Color.primaryTeal)
+                                        .frame(width: 20)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("Reminder")
+                                            .font(.system(size: 11, weight: .semibold))
+                                            .foregroundStyle(Color.mutedFg)
+                                        Menu {
+                                            ForEach(MedicationReminderOffset.allCases, id: \.rawValue) { option in
+                                                Button(option.label) { reminderOffset = option.rawValue }
+                                            }
+                                        } label: {
+                                            HStack {
+                                                Text(MedicationReminderOffset(rawValue: reminderOffset)?.label ?? "At dose time")
+                                                    .font(.system(size: 15))
+                                                    .foregroundStyle(Color.nearBlack)
+                                                Spacer()
+                                                Image(systemName: "chevron.up.chevron.down")
+                                                    .font(.system(size: 10))
+                                                    .foregroundStyle(Color.mutedFg.opacity(0.6))
+                                            }
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 12)
+                                .background(Color.mutedBg.opacity(0.5))
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            }
                         }
                         FormSection(title: "Color") {
                             FormColorPicker(selection: $colorIndex, colors: colorHexes, names: colorNames)
@@ -712,9 +782,32 @@ struct EditMedicationView: View {
         medication.scheduledTime = scheduledTime
         medication.colorIndex = colorIndex
         medication.notes = notes.trimmingCharacters(in: .whitespaces)
+        medication.reminderOffset = reminderOffset
         medication.pillCount = trackPillCount ? pillCount : nil
         MedicationNotifications.schedule(for: medication)
         dismiss()
+    }
+}
+
+// MARK: - Medication Reminder Offset
+
+enum MedicationReminderOffset: Int, CaseIterable {
+    case none        = -1
+    case atDoseTime  = 0
+    case fiveMin     = 5
+    case fifteenMin  = 15
+    case thirtyMin   = 30
+    case oneHour     = 60
+
+    var label: String {
+        switch self {
+        case .none:       return "None"
+        case .atDoseTime: return "At dose time"
+        case .fiveMin:    return "5 min before"
+        case .fifteenMin: return "15 min before"
+        case .thirtyMin:  return "30 min before"
+        case .oneHour:    return "1 hour before"
+        }
     }
 }
 
@@ -768,25 +861,34 @@ enum MedicationNotifications {
 
         center.removePendingNotificationRequests(withIdentifiers: ["\(base)-0", "\(base)-1", "\(base)-2"])
         guard medication.frequency != "As needed" else { return }
+        guard medication.reminderOffset != -1 else { return }
 
-        let offsets: [Int]
+        let hourOffsets: [Int]
         switch medication.frequency {
-        case "Twice daily":       offsets = [0, 12]
-        case "Three times daily": offsets = [0, 8, 16]
-        default:                  offsets = [0]
+        case "Twice daily":       hourOffsets = [0, 12]
+        case "Three times daily": hourOffsets = [0, 8, 16]
+        default:                  hourOffsets = [0]
         }
 
         let name = medication.name
         let dosage = medication.dosage
         let scheduledTime = medication.scheduledTime
+        let minuteOffset = medication.reminderOffset
 
         NotificationService.ensureAuthorizedThenSchedule { center in
-            for (i, offset) in offsets.enumerated() {
-                let fireDate = Calendar.current.date(byAdding: .hour, value: offset, to: scheduledTime) ?? scheduledTime
+            for (i, hourOffset) in hourOffsets.enumerated() {
+                let doseDate = Calendar.current.date(byAdding: .hour, value: hourOffset, to: scheduledTime) ?? scheduledTime
+                let fireDate = Calendar.current.date(byAdding: .minute, value: -minuteOffset, to: doseDate) ?? doseDate
                 let components = Calendar.current.dateComponents([.hour, .minute], from: fireDate)
 
                 let content = UNMutableNotificationContent()
-                content.title = "Time to take \(name)"
+                if minuteOffset == 60 {
+                    content.title = "Take \(name) in 1 hour"
+                } else if minuteOffset > 0 {
+                    content.title = "Take \(name) in \(minuteOffset) min"
+                } else {
+                    content.title = "Time to take \(name)"
+                }
                 content.body = dosage
                 content.sound = .default
 
