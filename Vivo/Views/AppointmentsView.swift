@@ -348,6 +348,7 @@ struct AddAppointmentView: View {
     @State private var date = Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: Date()) ?? Date()
     @State private var location = ""
     @State private var notes = ""
+    @State private var reminderOption = "1_day_1_hour"
 
     var body: some View {
         NavigationStack {
@@ -370,6 +371,39 @@ struct AddAppointmentView: View {
                         FormSection(title: "Date & Time", dotColor: Color.amberStart) {
                             datePickerRow(label: "Date", icon: "calendar", components: .date)
                             datePickerRow(label: "Time", icon: "clock", components: .hourAndMinute)
+                        }
+                        FormSection(title: "Reminders", dotColor: Color.amberStart) {
+                            HStack(spacing: 10) {
+                                Image(systemName: "bell.fill")
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(Color.primaryTeal)
+                                    .frame(width: 20)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Remind me")
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundStyle(Color.mutedFg)
+                                    Menu {
+                                        ForEach(AppointmentReminderOption.allCases, id: \.rawValue) { option in
+                                            Button(option.label) { reminderOption = option.rawValue }
+                                        }
+                                    } label: {
+                                        HStack {
+                                            Text(AppointmentReminderOption(rawValue: reminderOption)?.label ?? "1 day & 1 hour before")
+                                                .font(.system(size: 15))
+                                                .foregroundStyle(Color.nearBlack)
+                                            Spacer()
+                                            Image(systemName: "chevron.up.chevron.down")
+                                                .font(.system(size: 10))
+                                                .foregroundStyle(Color.mutedFg.opacity(0.6))
+                                        }
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 12)
+                            .background(Color.mutedBg.opacity(0.5))
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                         }
                         FormSection(title: "Details", dotColor: Color.amberStart) {
                             FormTextField(label: "Location", text: $location, placeholder: "Optional", icon: "mappin.circle.fill")
@@ -462,6 +496,7 @@ struct AddAppointmentView: View {
             notes: notes.trimmingCharacters(in: .whitespaces)
         )
         appt.doctor = selectedDoctor
+        appt.reminderOption = reminderOption
         modelContext.insert(appt)
         AppointmentNotifications.schedule(for: appt)
         dismiss()
@@ -481,6 +516,7 @@ struct EditAppointmentView: View {
     @State private var date: Date
     @State private var location: String
     @State private var notes: String
+    @State private var reminderOption: String
 
     init(appointment: Appointment) {
         self.appointment = appointment
@@ -490,6 +526,7 @@ struct EditAppointmentView: View {
         _date = State(initialValue: appointment.date)
         _location = State(initialValue: appointment.location)
         _notes = State(initialValue: appointment.notes)
+        _reminderOption = State(initialValue: appointment.reminderOption)
     }
 
     var body: some View {
@@ -507,6 +544,39 @@ struct EditAppointmentView: View {
                         FormSection(title: "Date & Time", dotColor: Color.amberStart) {
                             datePickerRow(label: "Date", icon: "calendar", components: .date)
                             datePickerRow(label: "Time", icon: "clock", components: .hourAndMinute)
+                        }
+                        FormSection(title: "Reminders", dotColor: Color.amberStart) {
+                            HStack(spacing: 10) {
+                                Image(systemName: "bell.fill")
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(Color.primaryTeal)
+                                    .frame(width: 20)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Remind me")
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundStyle(Color.mutedFg)
+                                    Menu {
+                                        ForEach(AppointmentReminderOption.allCases, id: \.rawValue) { option in
+                                            Button(option.label) { reminderOption = option.rawValue }
+                                        }
+                                    } label: {
+                                        HStack {
+                                            Text(AppointmentReminderOption(rawValue: reminderOption)?.label ?? "1 day & 1 hour before")
+                                                .font(.system(size: 15))
+                                                .foregroundStyle(Color.nearBlack)
+                                            Spacer()
+                                            Image(systemName: "chevron.up.chevron.down")
+                                                .font(.system(size: 10))
+                                                .foregroundStyle(Color.mutedFg.opacity(0.6))
+                                        }
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 12)
+                            .background(Color.mutedBg.opacity(0.5))
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                         }
                         FormSection(title: "Details", dotColor: Color.amberStart) {
                             FormTextField(label: "Location", text: $location, placeholder: "Optional", icon: "mappin.circle.fill")
@@ -597,8 +667,65 @@ struct EditAppointmentView: View {
         appointment.date = date
         appointment.location = location.trimmingCharacters(in: .whitespaces)
         appointment.notes = notes.trimmingCharacters(in: .whitespaces)
+        appointment.reminderOption = reminderOption
         AppointmentNotifications.schedule(for: appointment)
         dismiss()
+    }
+}
+
+// MARK: - Appointment Reminder Option
+
+enum AppointmentReminderOption: String, CaseIterable {
+    case none         = "none"
+    case atTime       = "at_time"
+    case fiveMin      = "5_min"
+    case fifteenMin   = "15_min"
+    case thirtyMin    = "30_min"
+    case oneHour      = "1_hour"
+    case twoHours     = "2_hours"
+    case oneDay       = "1_day"
+    case oneDayOneHour = "1_day_1_hour"
+
+    var label: String {
+        switch self {
+        case .none:          return "None"
+        case .atTime:        return "At time of event"
+        case .fiveMin:       return "5 min before"
+        case .fifteenMin:    return "15 min before"
+        case .thirtyMin:     return "30 min before"
+        case .oneHour:       return "1 hour before"
+        case .twoHours:      return "2 hours before"
+        case .oneDay:        return "1 day before"
+        case .oneDayOneHour: return "1 day & 1 hour before"
+        }
+    }
+
+    /// Time intervals (in seconds) before the appointment to fire each notification
+    var offsets: [TimeInterval] {
+        switch self {
+        case .none:          return []
+        case .atTime:        return [0]
+        case .fiveMin:       return [300]
+        case .fifteenMin:    return [900]
+        case .thirtyMin:     return [1800]
+        case .oneHour:       return [3600]
+        case .twoHours:      return [7200]
+        case .oneDay:        return [86400]
+        case .oneDayOneHour: return [86400, 3600]
+        }
+    }
+
+    func notificationTitle(for offset: TimeInterval) -> String {
+        switch offset {
+        case 0:     return "Appointment now"
+        case 300:   return "Appointment in 5 minutes"
+        case 900:   return "Appointment in 15 minutes"
+        case 1800:  return "Appointment in 30 minutes"
+        case 3600:  return "Appointment in 1 hour"
+        case 7200:  return "Appointment in 2 hours"
+        case 86400: return "Appointment tomorrow"
+        default:    return "Upcoming appointment"
+        }
     }
 }
 
@@ -613,8 +740,13 @@ enum AppointmentNotifications {
         let center = UNUserNotificationCenter.current()
         let base = baseId(for: appointment)
 
-        // Cancel any existing notifications before rescheduling (handles edits)
-        center.removePendingNotificationRequests(withIdentifiers: ["\(base)-day", "\(base)-hour"])
+        // Cancel both legacy and new identifiers for migration safety
+        center.removePendingNotificationRequests(
+            withIdentifiers: ["\(base)-day", "\(base)-hour", "\(base)-0", "\(base)-1"]
+        )
+
+        let option = AppointmentReminderOption(rawValue: appointment.reminderOption) ?? .oneDayOneHour
+        guard !option.offsets.isEmpty else { return }
 
         let now = Date()
         let title = appointment.title
@@ -622,31 +754,16 @@ enum AppointmentNotifications {
         let date = appointment.date
 
         NotificationService.ensureAuthorizedThenSchedule { center in
-            // 1 day before
-            if let dayBefore = Calendar.current.date(byAdding: .day, value: -1, to: date),
-               dayBefore > now {
+            for (i, offset) in option.offsets.enumerated() {
+                guard let fireDate = Calendar.current.date(byAdding: .second, value: -Int(offset), to: date),
+                      fireDate > now else { continue }
                 let content = UNMutableNotificationContent()
-                content.title = "Appointment tomorrow"
+                content.title = option.notificationTitle(for: offset)
                 content.body = "\(title)\(doctorPart)"
                 content.sound = .default
-                let comps = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: dayBefore)
+                let comps = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: fireDate)
                 center.add(UNNotificationRequest(
-                    identifier: "\(base)-day",
-                    content: content,
-                    trigger: UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
-                ))
-            }
-
-            // 1 hour before
-            if let hourBefore = Calendar.current.date(byAdding: .hour, value: -1, to: date),
-               hourBefore > now {
-                let content = UNMutableNotificationContent()
-                content.title = "Appointment in 1 hour"
-                content.body = "\(title)\(doctorPart)"
-                content.sound = .default
-                let comps = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: hourBefore)
-                center.add(UNNotificationRequest(
-                    identifier: "\(base)-hour",
+                    identifier: "\(base)-\(i)",
                     content: content,
                     trigger: UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
                 ))
@@ -657,7 +774,7 @@ enum AppointmentNotifications {
     static func cancel(for appointment: Appointment) {
         let base = baseId(for: appointment)
         UNUserNotificationCenter.current().removePendingNotificationRequests(
-            withIdentifiers: ["\(base)-day", "\(base)-hour"]
+            withIdentifiers: ["\(base)-day", "\(base)-hour", "\(base)-0", "\(base)-1"]
         )
     }
 }
