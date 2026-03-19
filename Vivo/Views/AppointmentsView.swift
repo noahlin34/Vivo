@@ -168,15 +168,9 @@ struct AppointmentDetailSheet: View {
         let now = Date()
         let apptDate = appointment.date
         guard apptDate > now else { return "No reminders (past)" }
-        let dayBefore = apptDate.addingTimeInterval(-86400)
-        let hourBefore = apptDate.addingTimeInterval(-3600)
-        if dayBefore > now {
-            return "1 day before · 1 hour before"
-        } else if hourBefore > now {
-            return "1 hour before"
-        } else {
-            return "No reminders (past)"
-        }
+        let option = AppointmentReminderOption(rawValue: appointment.reminderOption) ?? .oneDayOneHour
+        if option == .none { return "No reminders" }
+        return option.label
     }
 
     var body: some View {
@@ -293,7 +287,8 @@ struct AppointmentDetailSheet: View {
                     Text(reminderValue)
                         .font(.system(size: 14))
                         .foregroundStyle(Color.nearBlack)
-                    if notificationStatus.isDenied && reminderValue != "No reminders (past)" {
+                    let intentionallyOff = appointment.reminderOption == "none"
+                    if notificationStatus.isDenied && reminderValue != "No reminders (past)" && !intentionallyOff {
                         Image(systemName: "bell.slash")
                             .font(.system(size: 12))
                             .foregroundStyle(Color.amberStart)
