@@ -213,26 +213,26 @@ struct MedicationDetailSheet: View {
     private var color: Color { .medColor(medication.colorIndex) }
 
     private var reminderText: String {
+        guard medication.frequency != "As needed" else { return "No reminders" }
+        guard medication.reminderOffset != -1 else { return "No reminders" }
+
         let base = medication.scheduledTime
         let cal = Calendar.current
-        let hour = cal.component(.hour, from: base)
-        let minute = cal.component(.minute, from: base)
+        let minuteOffset = medication.reminderOffset
 
-        func timeString(addingHours offset: Int) -> String {
-            let components = DateComponents(hour: (hour + offset) % 24, minute: minute)
-            let date = cal.nextDate(after: Date(), matching: components, matchingPolicy: .nextTime) ?? Date()
-            return date.formatted(.dateTime.hour().minute())
+        func fireTimeString(addingHours hourOffset: Int) -> String {
+            let doseDate = cal.date(byAdding: .hour, value: hourOffset, to: base) ?? base
+            let fireDate = cal.date(byAdding: .minute, value: -minuteOffset, to: doseDate) ?? doseDate
+            return fireDate.formatted(.dateTime.hour().minute())
         }
 
         switch medication.frequency {
-        case "As needed":
-            return "No reminders"
         case "Once daily":
-            return "Daily at \(timeString(addingHours: 0))"
+            return "Daily at \(fireTimeString(addingHours: 0))"
         case "Twice daily":
-            return "Daily at \(timeString(addingHours: 0)), \(timeString(addingHours: 12))"
+            return "Daily at \(fireTimeString(addingHours: 0)), \(fireTimeString(addingHours: 12))"
         case "Three times daily":
-            return "Daily at \(timeString(addingHours: 0)), \(timeString(addingHours: 8)), \(timeString(addingHours: 16))"
+            return "Daily at \(fireTimeString(addingHours: 0)), \(fireTimeString(addingHours: 8)), \(fireTimeString(addingHours: 16))"
         default:
             return "No reminders"
         }
@@ -451,7 +451,7 @@ struct MedicationDetailSheet: View {
                     .font(.system(size: 14))
                     .foregroundStyle(Color.nearBlack)
                     .multilineTextAlignment(.trailing)
-                if notificationStatus.isDenied {
+                if notificationStatus.isDenied && medication.reminderOffset != -1 {
                     Image(systemName: "bell.slash")
                         .font(.system(size: 12))
                         .foregroundStyle(Color.amberStart)
