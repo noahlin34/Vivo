@@ -557,14 +557,15 @@ struct AddMedicationView: View {
                                         .font(.system(size: 11, weight: .semibold))
                                         .foregroundStyle(Color.mutedFg)
                                     Spacer()
-                                    Picker("", selection: $reminderOffset) {
+                                    Menu {
                                         ForEach(MedicationReminderOffset.allCases, id: \.rawValue) { option in
-                                            Text(option.label).tag(option.rawValue)
+                                            Button(option.label) { reminderOffset = option.rawValue }
                                         }
+                                    } label: {
+                                        Text(MedicationReminderOffset(rawValue: reminderOffset)?.label ?? "At dose time")
+                                            .font(.system(size: 14))
                                     }
-                                    .pickerStyle(.menu)
                                     .tint(Color.nearBlack)
-                                    .font(.system(size: 14))
                                 }
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 12)
@@ -707,14 +708,15 @@ struct EditMedicationView: View {
                                         .font(.system(size: 11, weight: .semibold))
                                         .foregroundStyle(Color.mutedFg)
                                     Spacer()
-                                    Picker("", selection: $reminderOffset) {
+                                    Menu {
                                         ForEach(MedicationReminderOffset.allCases, id: \.rawValue) { option in
-                                            Text(option.label).tag(option.rawValue)
+                                            Button(option.label) { reminderOffset = option.rawValue }
                                         }
+                                    } label: {
+                                        Text(MedicationReminderOffset(rawValue: reminderOffset)?.label ?? "At dose time")
+                                            .font(.system(size: 14))
                                     }
-                                    .pickerStyle(.menu)
                                     .tint(Color.nearBlack)
-                                    .font(.system(size: 14))
                                 }
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 12)

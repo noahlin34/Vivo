@@ -377,14 +377,15 @@ struct AddAppointmentView: View {
                                     .font(.system(size: 11, weight: .semibold))
                                     .foregroundStyle(Color.mutedFg)
                                 Spacer()
-                                Picker("", selection: $reminderOption) {
+                                Menu {
                                     ForEach(AppointmentReminderOption.allCases, id: \.rawValue) { option in
-                                        Text(option.label).tag(option.rawValue)
+                                        Button(option.label) { reminderOption = option.rawValue }
                                     }
+                                } label: {
+                                    Text(AppointmentReminderOption(rawValue: reminderOption)?.label ?? "1 day & 1 hour before")
+                                        .font(.system(size: 14))
                                 }
-                                .pickerStyle(.menu)
                                 .tint(Color.nearBlack)
-                                .font(.system(size: 14))
                             }
                             .padding(.horizontal, 14)
                             .padding(.vertical, 12)
@@ -541,14 +542,15 @@ struct EditAppointmentView: View {
                                     .font(.system(size: 11, weight: .semibold))
                                     .foregroundStyle(Color.mutedFg)
                                 Spacer()
-                                Picker("", selection: $reminderOption) {
+                                Menu {
                                     ForEach(AppointmentReminderOption.allCases, id: \.rawValue) { option in
-                                        Text(option.label).tag(option.rawValue)
+                                        Button(option.label) { reminderOption = option.rawValue }
                                     }
+                                } label: {
+                                    Text(AppointmentReminderOption(rawValue: reminderOption)?.label ?? "1 day & 1 hour before")
+                                        .font(.system(size: 14))
                                 }
-                                .pickerStyle(.menu)
                                 .tint(Color.nearBlack)
-                                .font(.system(size: 14))
                             }
                             .padding(.horizontal, 14)
                             .padding(.vertical, 12)
