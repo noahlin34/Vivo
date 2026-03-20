@@ -571,6 +571,8 @@ struct AddMedicationView: View {
                                                     .font(.system(size: 10))
                                                     .foregroundStyle(Color.mutedFg.opacity(0.6))
                                             }
+                                            .frame(maxWidth: .infinity)
+                                            .animation(.none, value: reminderOffset)
                                         }
                                         .buttonStyle(.plain)
                                     }
@@ -731,6 +733,8 @@ struct EditMedicationView: View {
                                                     .font(.system(size: 10))
                                                     .foregroundStyle(Color.mutedFg.opacity(0.6))
                                             }
+                                            .frame(maxWidth: .infinity)
+                                            .animation(.none, value: reminderOffset)
                                         }
                                         .buttonStyle(.plain)
                                     }
