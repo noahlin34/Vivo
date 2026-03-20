@@ -384,6 +384,7 @@ struct AddAppointmentView: View {
                                 }
                                 .pickerStyle(.menu)
                                 .tint(Color.nearBlack)
+                                .font(.system(size: 14))
                             }
                             .padding(.horizontal, 14)
                             .padding(.vertical, 12)
@@ -547,6 +548,7 @@ struct EditAppointmentView: View {
                                 }
                                 .pickerStyle(.menu)
                                 .tint(Color.nearBlack)
+                                .font(.system(size: 14))
                             }
                             .padding(.horizontal, 14)
                             .padding(.vertical, 12)
