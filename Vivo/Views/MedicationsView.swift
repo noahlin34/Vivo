@@ -553,32 +553,29 @@ struct AddMedicationView: View {
                                         .font(.system(size: 14))
                                         .foregroundStyle(Color.primaryTeal)
                                         .frame(width: 20)
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text("Reminder")
-                                            .font(.system(size: 11, weight: .semibold))
-                                            .foregroundStyle(Color.mutedFg)
-                                        Menu {
-                                            ForEach(MedicationReminderOffset.allCases, id: \.rawValue) { option in
-                                                Button(option.label) {
-                                                    var t = Transaction()
-                                                    t.disablesAnimations = true
-                                                    withTransaction(t) { reminderOffset = option.rawValue }
-                                                }
-                                            }
-                                        } label: {
-                                            HStack {
-                                                Text(MedicationReminderOffset(rawValue: reminderOffset)?.label ?? "At dose time")
-                                                    .font(.system(size: 15))
-                                                    .foregroundStyle(Color.nearBlack)
-                                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                                Image(systemName: "chevron.up.chevron.down")
-                                                    .font(.system(size: 10))
-                                                    .foregroundStyle(Color.mutedFg.opacity(0.6))
+                                    Text("Reminder")
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundStyle(Color.mutedFg)
+                                    Spacer()
+                                    Menu {
+                                        ForEach(MedicationReminderOffset.allCases, id: \.rawValue) { option in
+                                            Button(option.label) {
+                                                var t = Transaction()
+                                                t.disablesAnimations = true
+                                                withTransaction(t) { reminderOffset = option.rawValue }
                                             }
                                         }
-                                        .buttonStyle(.plain)
+                                    } label: {
+                                        HStack(spacing: 4) {
+                                            Text(MedicationReminderOffset(rawValue: reminderOffset)?.label ?? "At dose time")
+                                                .font(.system(size: 14))
+                                                .foregroundStyle(Color.nearBlack)
+                                            Image(systemName: "chevron.up.chevron.down")
+                                                .font(.system(size: 10))
+                                                .foregroundStyle(Color.mutedFg.opacity(0.6))
+                                        }
                                     }
-                                    .frame(maxWidth: .infinity)
+                                    .buttonStyle(.plain)
                                 }
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 12)
@@ -717,32 +714,29 @@ struct EditMedicationView: View {
                                         .font(.system(size: 14))
                                         .foregroundStyle(Color.primaryTeal)
                                         .frame(width: 20)
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text("Reminder")
-                                            .font(.system(size: 11, weight: .semibold))
-                                            .foregroundStyle(Color.mutedFg)
-                                        Menu {
-                                            ForEach(MedicationReminderOffset.allCases, id: \.rawValue) { option in
-                                                Button(option.label) {
-                                                    var t = Transaction()
-                                                    t.disablesAnimations = true
-                                                    withTransaction(t) { reminderOffset = option.rawValue }
-                                                }
-                                            }
-                                        } label: {
-                                            HStack {
-                                                Text(MedicationReminderOffset(rawValue: reminderOffset)?.label ?? "At dose time")
-                                                    .font(.system(size: 15))
-                                                    .foregroundStyle(Color.nearBlack)
-                                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                                Image(systemName: "chevron.up.chevron.down")
-                                                    .font(.system(size: 10))
-                                                    .foregroundStyle(Color.mutedFg.opacity(0.6))
+                                    Text("Reminder")
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundStyle(Color.mutedFg)
+                                    Spacer()
+                                    Menu {
+                                        ForEach(MedicationReminderOffset.allCases, id: \.rawValue) { option in
+                                            Button(option.label) {
+                                                var t = Transaction()
+                                                t.disablesAnimations = true
+                                                withTransaction(t) { reminderOffset = option.rawValue }
                                             }
                                         }
-                                        .buttonStyle(.plain)
+                                    } label: {
+                                        HStack(spacing: 4) {
+                                            Text(MedicationReminderOffset(rawValue: reminderOffset)?.label ?? "At dose time")
+                                                .font(.system(size: 14))
+                                                .foregroundStyle(Color.nearBlack)
+                                            Image(systemName: "chevron.up.chevron.down")
+                                                .font(.system(size: 10))
+                                                .foregroundStyle(Color.mutedFg.opacity(0.6))
+                                        }
                                     }
-                                    .frame(maxWidth: .infinity)
+                                    .buttonStyle(.plain)
                                 }
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 12)
