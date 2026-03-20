@@ -408,10 +408,8 @@ struct AddAppointmentView: View {
             }
             .background(Color.bg)
             .toolbar(.hidden, for: .navigationBar)
-            .confirmationDialog("Remind me", isPresented: $showReminderPicker, titleVisibility: .visible) {
-                ForEach(AppointmentReminderOption.allCases, id: \.rawValue) { option in
-                    Button(option.label) { reminderOption = option.rawValue }
-                }
+            .sheet(isPresented: $showReminderPicker) {
+                reminderPickerSheet
             }
         }
         .presentationCornerRadius(24)
@@ -480,6 +478,15 @@ struct AddAppointmentView: View {
         .padding(.vertical, 12)
         .background(Color.mutedBg.opacity(0.5))
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private var reminderPickerSheet: some View {
+        OptionPickerSheet(
+            title: "Remind me",
+            options: AppointmentReminderOption.allCases.map { ($0.rawValue, $0.label) },
+            selectedValue: reminderOption,
+            onSelect: { reminderOption = $0 }
+        )
     }
 
     private func save() {
@@ -581,10 +588,8 @@ struct EditAppointmentView: View {
             }
             .background(Color.bg)
             .toolbar(.hidden, for: .navigationBar)
-            .confirmationDialog("Remind me", isPresented: $showReminderPicker, titleVisibility: .visible) {
-                ForEach(AppointmentReminderOption.allCases, id: \.rawValue) { option in
-                    Button(option.label) { reminderOption = option.rawValue }
-                }
+            .sheet(isPresented: $showReminderPicker) {
+                reminderPickerSheet
             }
         }
         .presentationCornerRadius(24)
@@ -653,6 +658,15 @@ struct EditAppointmentView: View {
         .padding(.vertical, 12)
         .background(Color.mutedBg.opacity(0.5))
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private var reminderPickerSheet: some View {
+        OptionPickerSheet(
+            title: "Remind me",
+            options: AppointmentReminderOption.allCases.map { ($0.rawValue, $0.label) },
+            selectedValue: reminderOption,
+            onSelect: { reminderOption = $0 }
+        )
     }
 
     private func save() {

@@ -607,13 +607,20 @@ struct AddMedicationView: View {
             }
             .background(Color.bg)
             .toolbar(.hidden, for: .navigationBar)
-            .confirmationDialog("Reminder", isPresented: $showReminderPicker, titleVisibility: .visible) {
-                ForEach(MedicationReminderOffset.allCases, id: \.rawValue) { option in
-                    Button(option.label) { reminderOffset = option.rawValue }
-                }
+            .sheet(isPresented: $showReminderPicker) {
+                reminderPickerSheet
             }
         }
         .presentationCornerRadius(24)
+    }
+
+    private var reminderPickerSheet: some View {
+        OptionPickerSheet(
+            title: "Reminder",
+            options: MedicationReminderOffset.allCases.map { ($0.rawValue, $0.label) },
+            selectedValue: reminderOffset,
+            onSelect: { reminderOffset = $0 }
+        )
     }
 
     private func save() {
@@ -766,13 +773,20 @@ struct EditMedicationView: View {
             }
             .background(Color.bg)
             .toolbar(.hidden, for: .navigationBar)
-            .confirmationDialog("Reminder", isPresented: $showReminderPicker, titleVisibility: .visible) {
-                ForEach(MedicationReminderOffset.allCases, id: \.rawValue) { option in
-                    Button(option.label) { reminderOffset = option.rawValue }
-                }
+            .sheet(isPresented: $showReminderPicker) {
+                reminderPickerSheet
             }
         }
         .presentationCornerRadius(24)
+    }
+
+    private var reminderPickerSheet: some View {
+        OptionPickerSheet(
+            title: "Reminder",
+            options: MedicationReminderOffset.allCases.map { ($0.rawValue, $0.label) },
+            selectedValue: reminderOffset,
+            onSelect: { reminderOffset = $0 }
+        )
     }
 
     private func save() {

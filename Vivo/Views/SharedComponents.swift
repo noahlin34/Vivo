@@ -845,3 +845,62 @@ struct FormChipPicker<T: Hashable>: View {
         }
     }
 }
+
+// MARK: - Option Picker Sheet
+
+struct OptionPickerSheet<T: Hashable & Equatable>: View {
+    let title: String
+    let options: [(value: T, label: String)]
+    let selectedValue: T
+    let onSelect: (T) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Capsule()
+                .fill(Color.mutedFg.opacity(0.25))
+                .frame(width: 36, height: 4)
+                .padding(.top, 12)
+                .padding(.bottom, 16)
+
+            Text(title)
+                .font(.system(size: 17, weight: .semibold, design: .serif))
+                .foregroundStyle(Color.nearBlack)
+                .padding(.bottom, 16)
+
+            Divider()
+
+            ScrollView {
+                VStack(spacing: 0) {
+                    ForEach(options, id: \.value) { option in
+                        Button {
+                            onSelect(option.value)
+                            dismiss()
+                        } label: {
+                            HStack {
+                                Text(option.label)
+                                    .font(.system(size: 16))
+                                    .foregroundStyle(Color.nearBlack)
+                                Spacer()
+                                if selectedValue == option.value {
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundStyle(Color.primaryTeal)
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 14)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        Divider()
+                    }
+                }
+            }
+        }
+        .background(Color.cardBg)
+        .presentationDetents([.medium])
+        .presentationCornerRadius(24)
+        .presentationDragIndicator(.hidden)
+    }
+}
