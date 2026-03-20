@@ -390,13 +390,11 @@ struct AddAppointmentView: View {
                                             Text(AppointmentReminderOption(rawValue: reminderOption)?.label ?? "1 day & 1 hour before")
                                                 .font(.system(size: 15))
                                                 .foregroundStyle(Color.nearBlack)
-                                            Spacer()
+                                                .frame(maxWidth: .infinity, alignment: .leading)
                                             Image(systemName: "chevron.up.chevron.down")
                                                 .font(.system(size: 10))
                                                 .foregroundStyle(Color.mutedFg.opacity(0.6))
                                         }
-                                        .frame(maxWidth: .infinity)
-                                        .animation(.none, value: reminderOption)
                                     }
                                     .buttonStyle(.plain)
                                 }
@@ -570,13 +568,11 @@ struct EditAppointmentView: View {
                                             Text(AppointmentReminderOption(rawValue: reminderOption)?.label ?? "1 day & 1 hour before")
                                                 .font(.system(size: 15))
                                                 .foregroundStyle(Color.nearBlack)
-                                            Spacer()
+                                                .frame(maxWidth: .infinity, alignment: .leading)
                                             Image(systemName: "chevron.up.chevron.down")
                                                 .font(.system(size: 10))
                                                 .foregroundStyle(Color.mutedFg.opacity(0.6))
                                         }
-                                        .frame(maxWidth: .infinity)
-                                        .animation(.none, value: reminderOption)
                                     }
                                     .buttonStyle(.plain)
                                 }

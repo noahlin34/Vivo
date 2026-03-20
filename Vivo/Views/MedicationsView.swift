@@ -570,13 +570,11 @@ struct AddMedicationView: View {
                                                 Text(MedicationReminderOffset(rawValue: reminderOffset)?.label ?? "At dose time")
                                                     .font(.system(size: 15))
                                                     .foregroundStyle(Color.nearBlack)
-                                                Spacer()
+                                                    .frame(maxWidth: .infinity, alignment: .leading)
                                                 Image(systemName: "chevron.up.chevron.down")
                                                     .font(.system(size: 10))
                                                     .foregroundStyle(Color.mutedFg.opacity(0.6))
                                             }
-                                            .frame(maxWidth: .infinity)
-                                            .animation(.none, value: reminderOffset)
                                         }
                                         .buttonStyle(.plain)
                                     }
@@ -736,13 +734,11 @@ struct EditMedicationView: View {
                                                 Text(MedicationReminderOffset(rawValue: reminderOffset)?.label ?? "At dose time")
                                                     .font(.system(size: 15))
                                                     .foregroundStyle(Color.nearBlack)
-                                                Spacer()
+                                                    .frame(maxWidth: .infinity, alignment: .leading)
                                                 Image(systemName: "chevron.up.chevron.down")
                                                     .font(.system(size: 10))
                                                     .foregroundStyle(Color.mutedFg.opacity(0.6))
                                             }
-                                            .frame(maxWidth: .infinity)
-                                            .animation(.none, value: reminderOffset)
                                         }
                                         .buttonStyle(.plain)
                                     }
