@@ -127,15 +127,29 @@ struct HomeView: View {
                     .padding(.top, 2)
 
                 // Medication progress card
-                medProgressCard
-                    .padding(.top, 20)
+                Button {
+                    selectedTab = 1
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                } label: {
+                    medProgressCard
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 20)
 
                 // Next appointment chip
-                heroChip(
-                    icon: "calendar",
-                    label: "Next Appointment",
-                    value: nextAppointment.map { $0.date.formatted(.dateTime.month(.wide).day().hour().minute()) } ?? "None scheduled"
-                )
+                Button {
+                    if let appt = nextAppointment {
+                        selectedAppt = appt
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    }
+                } label: {
+                    heroChip(
+                        icon: "calendar",
+                        label: "Next Appointment",
+                        value: nextAppointment.map { $0.date.formatted(.dateTime.month(.wide).day().hour().minute()) } ?? "None scheduled"
+                    )
+                }
+                .buttonStyle(.plain)
                 .padding(.top, 10)
                 .padding(.bottom, 28)
             }
