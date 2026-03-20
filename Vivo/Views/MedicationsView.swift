@@ -569,7 +569,7 @@ struct AddMedicationView: View {
                             FormChipPicker(
                                 selection: $frequency,
                                 options: frequencies,
-                                labels: { $0 },
+                                labels: { $0 == "Three times daily" ? "3× daily" : $0 },
                                 gradient: [.tealStart, .tealEnd]
                             )
                             if frequency != "As needed" {
@@ -731,7 +731,7 @@ struct EditMedicationView: View {
                             FormChipPicker(
                                 selection: $frequency,
                                 options: frequencies,
-                                labels: { $0 },
+                                labels: { $0 == "Three times daily" ? "3× daily" : $0 },
                                 gradient: [.tealStart, .tealEnd]
                             )
                             if frequency != "As needed" {
