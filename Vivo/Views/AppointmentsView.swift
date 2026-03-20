@@ -344,6 +344,7 @@ struct AddAppointmentView: View {
     @State private var location = ""
     @State private var notes = ""
     @State private var reminderOption = "1_day_1_hour"
+    @State private var showReminderPicker = false
 
     var body: some View {
         NavigationStack {
@@ -368,29 +369,31 @@ struct AddAppointmentView: View {
                             datePickerRow(label: "Time", icon: "clock", components: .hourAndMinute)
                         }
                         FormSection(title: "Reminders", dotColor: Color.amberStart) {
-                            HStack(spacing: 10) {
-                                Image(systemName: "bell.fill")
-                                    .font(.system(size: 14))
-                                    .foregroundStyle(Color.primaryTeal)
-                                    .frame(width: 20)
-                                Text("Remind me")
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundStyle(Color.mutedFg)
-                                Spacer()
-                                Menu {
-                                    ForEach(AppointmentReminderOption.allCases, id: \.rawValue) { option in
-                                        Button(option.label) { reminderOption = option.rawValue }
-                                    }
-                                } label: {
-                                    Text(AppointmentReminderOption(rawValue: reminderOption)?.label ?? "1 day & 1 hour before")
+                            Button { showReminderPicker = true } label: {
+                                HStack(spacing: 10) {
+                                    Image(systemName: "bell.fill")
                                         .font(.system(size: 14))
+                                        .foregroundStyle(Color.primaryTeal)
+                                        .frame(width: 20)
+                                    Text("Remind me")
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundStyle(Color.mutedFg)
+                                    Spacer()
+                                    HStack(spacing: 4) {
+                                        Text(AppointmentReminderOption(rawValue: reminderOption)?.label ?? "1 day & 1 hour before")
+                                            .font(.system(size: 14))
+                                            .foregroundStyle(Color.nearBlack)
+                                        Image(systemName: "chevron.up.chevron.down")
+                                            .font(.system(size: 10))
+                                            .foregroundStyle(Color.mutedFg.opacity(0.6))
+                                    }
                                 }
-                                .tint(Color.nearBlack)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 12)
+                                .background(Color.mutedBg.opacity(0.5))
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                             }
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 12)
-                            .background(Color.mutedBg.opacity(0.5))
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .buttonStyle(.plain)
                         }
                         FormSection(title: "Details", dotColor: Color.amberStart) {
                             FormTextField(label: "Location", text: $location, placeholder: "Optional", icon: "mappin.circle.fill")
@@ -405,6 +408,11 @@ struct AddAppointmentView: View {
             }
             .background(Color.bg)
             .toolbar(.hidden, for: .navigationBar)
+            .confirmationDialog("Remind me", isPresented: $showReminderPicker, titleVisibility: .visible) {
+                ForEach(AppointmentReminderOption.allCases, id: \.rawValue) { option in
+                    Button(option.label) { reminderOption = option.rawValue }
+                }
+            }
         }
         .presentationCornerRadius(24)
     }
@@ -504,6 +512,7 @@ struct EditAppointmentView: View {
     @State private var location: String
     @State private var notes: String
     @State private var reminderOption: String
+    @State private var showReminderPicker = false
 
     init(appointment: Appointment) {
         self.appointment = appointment
@@ -533,29 +542,31 @@ struct EditAppointmentView: View {
                             datePickerRow(label: "Time", icon: "clock", components: .hourAndMinute)
                         }
                         FormSection(title: "Reminders", dotColor: Color.amberStart) {
-                            HStack(spacing: 10) {
-                                Image(systemName: "bell.fill")
-                                    .font(.system(size: 14))
-                                    .foregroundStyle(Color.primaryTeal)
-                                    .frame(width: 20)
-                                Text("Remind me")
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundStyle(Color.mutedFg)
-                                Spacer()
-                                Menu {
-                                    ForEach(AppointmentReminderOption.allCases, id: \.rawValue) { option in
-                                        Button(option.label) { reminderOption = option.rawValue }
-                                    }
-                                } label: {
-                                    Text(AppointmentReminderOption(rawValue: reminderOption)?.label ?? "1 day & 1 hour before")
+                            Button { showReminderPicker = true } label: {
+                                HStack(spacing: 10) {
+                                    Image(systemName: "bell.fill")
                                         .font(.system(size: 14))
+                                        .foregroundStyle(Color.primaryTeal)
+                                        .frame(width: 20)
+                                    Text("Remind me")
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundStyle(Color.mutedFg)
+                                    Spacer()
+                                    HStack(spacing: 4) {
+                                        Text(AppointmentReminderOption(rawValue: reminderOption)?.label ?? "1 day & 1 hour before")
+                                            .font(.system(size: 14))
+                                            .foregroundStyle(Color.nearBlack)
+                                        Image(systemName: "chevron.up.chevron.down")
+                                            .font(.system(size: 10))
+                                            .foregroundStyle(Color.mutedFg.opacity(0.6))
+                                    }
                                 }
-                                .tint(Color.nearBlack)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 12)
+                                .background(Color.mutedBg.opacity(0.5))
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                             }
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 12)
-                            .background(Color.mutedBg.opacity(0.5))
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .buttonStyle(.plain)
                         }
                         FormSection(title: "Details", dotColor: Color.amberStart) {
                             FormTextField(label: "Location", text: $location, placeholder: "Optional", icon: "mappin.circle.fill")
@@ -570,6 +581,11 @@ struct EditAppointmentView: View {
             }
             .background(Color.bg)
             .toolbar(.hidden, for: .navigationBar)
+            .confirmationDialog("Remind me", isPresented: $showReminderPicker, titleVisibility: .visible) {
+                ForEach(AppointmentReminderOption.allCases, id: \.rawValue) { option in
+                    Button(option.label) { reminderOption = option.rawValue }
+                }
+            }
         }
         .presentationCornerRadius(24)
     }
