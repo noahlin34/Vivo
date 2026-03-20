@@ -559,7 +559,11 @@ struct AddMedicationView: View {
                                             .foregroundStyle(Color.mutedFg)
                                         Menu {
                                             ForEach(MedicationReminderOffset.allCases, id: \.rawValue) { option in
-                                                Button(option.label) { reminderOffset = option.rawValue }
+                                                Button(option.label) {
+                                                    var t = Transaction()
+                                                    t.disablesAnimations = true
+                                                    withTransaction(t) { reminderOffset = option.rawValue }
+                                                }
                                             }
                                         } label: {
                                             HStack {
@@ -721,7 +725,11 @@ struct EditMedicationView: View {
                                             .foregroundStyle(Color.mutedFg)
                                         Menu {
                                             ForEach(MedicationReminderOffset.allCases, id: \.rawValue) { option in
-                                                Button(option.label) { reminderOffset = option.rawValue }
+                                                Button(option.label) {
+                                                    var t = Transaction()
+                                                    t.disablesAnimations = true
+                                                    withTransaction(t) { reminderOffset = option.rawValue }
+                                                }
                                             }
                                         } label: {
                                             HStack {

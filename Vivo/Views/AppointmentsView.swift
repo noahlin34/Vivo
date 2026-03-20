@@ -379,7 +379,11 @@ struct AddAppointmentView: View {
                                         .foregroundStyle(Color.mutedFg)
                                     Menu {
                                         ForEach(AppointmentReminderOption.allCases, id: \.rawValue) { option in
-                                            Button(option.label) { reminderOption = option.rawValue }
+                                            Button(option.label) {
+                                                var t = Transaction()
+                                                t.disablesAnimations = true
+                                                withTransaction(t) { reminderOption = option.rawValue }
+                                            }
                                         }
                                     } label: {
                                         HStack {
@@ -555,7 +559,11 @@ struct EditAppointmentView: View {
                                         .foregroundStyle(Color.mutedFg)
                                     Menu {
                                         ForEach(AppointmentReminderOption.allCases, id: \.rawValue) { option in
-                                            Button(option.label) { reminderOption = option.rawValue }
+                                            Button(option.label) {
+                                                var t = Transaction()
+                                                t.disablesAnimations = true
+                                                withTransaction(t) { reminderOption = option.rawValue }
+                                            }
                                         }
                                     } label: {
                                         HStack {
