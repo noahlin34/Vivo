@@ -574,6 +574,7 @@ struct AddMedicationView: View {
                                         }
                                         .buttonStyle(.plain)
                                     }
+                                    .frame(maxWidth: .infinity)
                                 }
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 12)
@@ -733,6 +734,7 @@ struct EditMedicationView: View {
                                         }
                                         .buttonStyle(.plain)
                                     }
+                                    .frame(maxWidth: .infinity)
                                 }
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 12)
