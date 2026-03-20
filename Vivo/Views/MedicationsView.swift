@@ -216,25 +216,42 @@ struct MedicationDetailSheet: View {
         guard medication.frequency != "As needed" else { return "No reminders" }
         guard medication.reminderOffset != -1 else { return "No reminders" }
 
-        let base = medication.scheduledTime
         let cal = Calendar.current
         let minuteOffset = medication.reminderOffset
+        let t1 = medication.scheduledTime
+        let t2 = medication.scheduledTime2 ?? cal.date(byAdding: .hour, value: 12, to: t1) ?? t1
+        let t3 = medication.scheduledTime3 ?? cal.date(byAdding: .hour, value: 16, to: t1) ?? t1
 
-        func fireTimeString(addingHours hourOffset: Int) -> String {
-            let doseDate = cal.date(byAdding: .hour, value: hourOffset, to: base) ?? base
+        func fireTime(from doseDate: Date) -> String {
             let fireDate = cal.date(byAdding: .minute, value: -minuteOffset, to: doseDate) ?? doseDate
             return fireDate.formatted(.dateTime.hour().minute())
         }
 
         switch medication.frequency {
         case "Once daily":
-            return "Daily at \(fireTimeString(addingHours: 0))"
+            return "Daily at \(fireTime(from: t1))"
         case "Twice daily":
-            return "Daily at \(fireTimeString(addingHours: 0)), \(fireTimeString(addingHours: 12))"
+            return "Daily at \(fireTime(from: t1)), \(fireTime(from: t2))"
         case "Three times daily":
-            return "Daily at \(fireTimeString(addingHours: 0)), \(fireTimeString(addingHours: 8)), \(fireTimeString(addingHours: 16))"
+            return "Daily at \(fireTime(from: t1)), \(fireTime(from: t2)), \(fireTime(from: t3))"
         default:
             return "No reminders"
+        }
+    }
+
+    private var scheduleTimeText: String {
+        let cal = Calendar.current
+        let t1 = medication.scheduledTime.formatted(.dateTime.hour().minute())
+        switch medication.frequency {
+        case "Twice daily":
+            let d2 = medication.scheduledTime2 ?? cal.date(byAdding: .hour, value: 12, to: medication.scheduledTime) ?? medication.scheduledTime
+            return "\(t1) · \(d2.formatted(.dateTime.hour().minute()))"
+        case "Three times daily":
+            let d2 = medication.scheduledTime2 ?? cal.date(byAdding: .hour, value: 8, to: medication.scheduledTime) ?? medication.scheduledTime
+            let d3 = medication.scheduledTime3 ?? cal.date(byAdding: .hour, value: 16, to: medication.scheduledTime) ?? medication.scheduledTime
+            return "\(t1) · \(d2.formatted(.dateTime.hour().minute())) · \(d3.formatted(.dateTime.hour().minute()))"
+        default:
+            return t1
         }
     }
 
@@ -285,9 +302,9 @@ struct MedicationDetailSheet: View {
                     // Details
                     VStack(spacing: 0) {
                         detailRow(label: "Frequency", value: medication.frequency)
-                        Divider().padding(.leading, 16)
-                        detailRow(label: "Time", value: medication.scheduledTime.formatted(.dateTime.hour().minute()))
                         if medication.frequency != "As needed" {
+                            Divider().padding(.leading, 16)
+                            detailRow(label: "Time", value: scheduleTimeText)
                             Divider().padding(.leading, 16)
                             reminderRow
                         }
@@ -481,6 +498,31 @@ struct MedicationDetailSheet: View {
     }
 }
 
+// MARK: - Shared Time Picker Row
+
+private func medicationTimePickerRow(label: String, selection: Binding<Date>) -> some View {
+    HStack(spacing: 10) {
+        Image(systemName: "clock")
+            .font(.system(size: 14))
+            .foregroundStyle(Color.primaryTeal)
+            .frame(width: 20)
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(Color.mutedFg)
+            DatePicker("", selection: selection, displayedComponents: .hourAndMinute)
+                .labelsHidden()
+                .datePickerStyle(.compact)
+                .tint(Color.primaryTeal)
+        }
+        Spacer()
+    }
+    .padding(.horizontal, 14)
+    .padding(.vertical, 12)
+    .background(Color.mutedBg.opacity(0.5))
+    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+}
+
 // MARK: - Add Medication Sheet
 
 struct AddMedicationView: View {
@@ -491,6 +533,8 @@ struct AddMedicationView: View {
     @State private var dosage = ""
     @State private var frequency = "Once daily"
     @State private var scheduledTime = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
+    @State private var scheduledTime2 = Calendar.current.date(bySettingHour: 20, minute: 0, second: 0, of: Date()) ?? Date()
+    @State private var scheduledTime3 = Calendar.current.date(bySettingHour: 14, minute: 0, second: 0, of: Date()) ?? Date()
     @State private var notes = ""
     @State private var colorIndex = 0
     @State private var reminderOffset: Int = 0
@@ -528,27 +572,17 @@ struct AddMedicationView: View {
                                 labels: { $0 },
                                 gradient: [.tealStart, .tealEnd]
                             )
-                            HStack(spacing: 10) {
-                                Image(systemName: "clock")
-                                    .font(.system(size: 14))
-                                    .foregroundStyle(Color.primaryTeal)
-                                    .frame(width: 20)
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Time")
-                                        .font(.system(size: 11, weight: .semibold))
-                                        .foregroundStyle(Color.mutedFg)
-                                    DatePicker("", selection: $scheduledTime, displayedComponents: .hourAndMinute)
-                                        .labelsHidden()
-                                        .datePickerStyle(.compact)
-                                        .tint(Color.primaryTeal)
-                                }
-                                Spacer()
-                            }
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 12)
-                            .background(Color.mutedBg.opacity(0.5))
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                             if frequency != "As needed" {
+                                medicationTimePickerRow(
+                                    label: frequency == "Once daily" ? "Time" : "Dose 1",
+                                    selection: $scheduledTime
+                                )
+                                if frequency == "Twice daily" || frequency == "Three times daily" {
+                                    medicationTimePickerRow(label: "Dose 2", selection: $scheduledTime2)
+                                }
+                                if frequency == "Three times daily" {
+                                    medicationTimePickerRow(label: "Dose 3", selection: $scheduledTime3)
+                                }
                                 Button { showReminderPicker = true } label: {
                                     HStack(spacing: 10) {
                                         Image(systemName: "bell.fill")
@@ -634,6 +668,8 @@ struct AddMedicationView: View {
         )
         med.pillCount = trackPillCount ? pillCount : nil
         med.reminderOffset = reminderOffset
+        med.scheduledTime2 = (frequency == "Twice daily" || frequency == "Three times daily") ? scheduledTime2 : nil
+        med.scheduledTime3 = frequency == "Three times daily" ? scheduledTime3 : nil
         modelContext.insert(med)
         MedicationNotifications.schedule(for: med)
         dismiss()
@@ -650,6 +686,8 @@ struct EditMedicationView: View {
     @State private var dosage: String
     @State private var frequency: String
     @State private var scheduledTime: Date
+    @State private var scheduledTime2: Date
+    @State private var scheduledTime3: Date
     @State private var colorIndex: Int
     @State private var notes: String
     @State private var reminderOffset: Int
@@ -667,6 +705,8 @@ struct EditMedicationView: View {
         _dosage = State(initialValue: medication.dosage)
         _frequency = State(initialValue: medication.frequency)
         _scheduledTime = State(initialValue: medication.scheduledTime)
+        _scheduledTime2 = State(initialValue: medication.scheduledTime2 ?? Calendar.current.date(byAdding: .hour, value: 12, to: medication.scheduledTime) ?? medication.scheduledTime)
+        _scheduledTime3 = State(initialValue: medication.scheduledTime3 ?? Calendar.current.date(byAdding: .hour, value: 6, to: medication.scheduledTime2 ?? medication.scheduledTime) ?? medication.scheduledTime)
         _colorIndex = State(initialValue: medication.colorIndex)
         _notes = State(initialValue: medication.notes)
         _reminderOffset = State(initialValue: medication.reminderOffset)
@@ -694,27 +734,17 @@ struct EditMedicationView: View {
                                 labels: { $0 },
                                 gradient: [.tealStart, .tealEnd]
                             )
-                            HStack(spacing: 10) {
-                                Image(systemName: "clock")
-                                    .font(.system(size: 14))
-                                    .foregroundStyle(Color.primaryTeal)
-                                    .frame(width: 20)
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Time")
-                                        .font(.system(size: 11, weight: .semibold))
-                                        .foregroundStyle(Color.mutedFg)
-                                    DatePicker("", selection: $scheduledTime, displayedComponents: .hourAndMinute)
-                                        .labelsHidden()
-                                        .datePickerStyle(.compact)
-                                        .tint(Color.primaryTeal)
-                                }
-                                Spacer()
-                            }
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 12)
-                            .background(Color.mutedBg.opacity(0.5))
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                             if frequency != "As needed" {
+                                medicationTimePickerRow(
+                                    label: frequency == "Once daily" ? "Time" : "Dose 1",
+                                    selection: $scheduledTime
+                                )
+                                if frequency == "Twice daily" || frequency == "Three times daily" {
+                                    medicationTimePickerRow(label: "Dose 2", selection: $scheduledTime2)
+                                }
+                                if frequency == "Three times daily" {
+                                    medicationTimePickerRow(label: "Dose 3", selection: $scheduledTime3)
+                                }
                                 Button { showReminderPicker = true } label: {
                                     HStack(spacing: 10) {
                                         Image(systemName: "bell.fill")
@@ -794,6 +824,8 @@ struct EditMedicationView: View {
         medication.dosage = dosage.trimmingCharacters(in: .whitespaces)
         medication.frequency = frequency
         medication.scheduledTime = scheduledTime
+        medication.scheduledTime2 = (frequency == "Twice daily" || frequency == "Three times daily") ? scheduledTime2 : nil
+        medication.scheduledTime3 = frequency == "Three times daily" ? scheduledTime3 : nil
         medication.colorIndex = colorIndex
         medication.notes = notes.trimmingCharacters(in: .whitespaces)
         medication.reminderOffset = reminderOffset
@@ -877,22 +909,24 @@ enum MedicationNotifications {
         guard medication.frequency != "As needed" else { return }
         guard medication.reminderOffset != -1 else { return }
 
-        let hourOffsets: [Int]
+        let cal = Calendar.current
+        let t1 = medication.scheduledTime
+        let t2 = medication.scheduledTime2 ?? cal.date(byAdding: .hour, value: 12, to: t1) ?? t1
+        let t3 = medication.scheduledTime3 ?? cal.date(byAdding: .hour, value: 16, to: t1) ?? t1
+        let doseTimes: [Date]
         switch medication.frequency {
-        case "Twice daily":       hourOffsets = [0, 12]
-        case "Three times daily": hourOffsets = [0, 8, 16]
-        default:                  hourOffsets = [0]
+        case "Twice daily":       doseTimes = [t1, t2]
+        case "Three times daily": doseTimes = [t1, t2, t3]
+        default:                  doseTimes = [t1]
         }
 
         let name = medication.name
         let dosage = medication.dosage
-        let scheduledTime = medication.scheduledTime
         let minuteOffset = medication.reminderOffset
 
         NotificationService.ensureAuthorizedThenSchedule { center in
-            for (i, hourOffset) in hourOffsets.enumerated() {
-                let doseDate = Calendar.current.date(byAdding: .hour, value: hourOffset, to: scheduledTime) ?? scheduledTime
-                let fireDate = Calendar.current.date(byAdding: .minute, value: -minuteOffset, to: doseDate) ?? doseDate
+            for (i, doseDate) in doseTimes.enumerated() {
+                let fireDate = cal.date(byAdding: .minute, value: -minuteOffset, to: doseDate) ?? doseDate
                 let components = Calendar.current.dateComponents([.hour, .minute], from: fireDate)
 
                 let content = UNMutableNotificationContent()

@@ -12,6 +12,8 @@ final class Medication {
     var dosage: String = ""
     var frequency: String = "Once daily"
     var scheduledTime: Date = Date()
+    var scheduledTime2: Date? = nil
+    var scheduledTime3: Date? = nil
     var colorIndex: Int = 0
     var notes: String = ""
     var takenDates: [Date] = []
