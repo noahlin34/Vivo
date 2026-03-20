@@ -557,25 +557,13 @@ struct AddMedicationView: View {
                                         .font(.system(size: 11, weight: .semibold))
                                         .foregroundStyle(Color.mutedFg)
                                     Spacer()
-                                    Menu {
+                                    Picker("", selection: $reminderOffset) {
                                         ForEach(MedicationReminderOffset.allCases, id: \.rawValue) { option in
-                                            Button(option.label) {
-                                                var t = Transaction()
-                                                t.disablesAnimations = true
-                                                withTransaction(t) { reminderOffset = option.rawValue }
-                                            }
-                                        }
-                                    } label: {
-                                        HStack(spacing: 4) {
-                                            Text(MedicationReminderOffset(rawValue: reminderOffset)?.label ?? "At dose time")
-                                                .font(.system(size: 14))
-                                                .foregroundStyle(Color.nearBlack)
-                                            Image(systemName: "chevron.up.chevron.down")
-                                                .font(.system(size: 10))
-                                                .foregroundStyle(Color.mutedFg.opacity(0.6))
+                                            Text(option.label).tag(option.rawValue)
                                         }
                                     }
-                                    .buttonStyle(.plain)
+                                    .pickerStyle(.menu)
+                                    .tint(Color.nearBlack)
                                 }
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 12)
@@ -718,25 +706,13 @@ struct EditMedicationView: View {
                                         .font(.system(size: 11, weight: .semibold))
                                         .foregroundStyle(Color.mutedFg)
                                     Spacer()
-                                    Menu {
+                                    Picker("", selection: $reminderOffset) {
                                         ForEach(MedicationReminderOffset.allCases, id: \.rawValue) { option in
-                                            Button(option.label) {
-                                                var t = Transaction()
-                                                t.disablesAnimations = true
-                                                withTransaction(t) { reminderOffset = option.rawValue }
-                                            }
-                                        }
-                                    } label: {
-                                        HStack(spacing: 4) {
-                                            Text(MedicationReminderOffset(rawValue: reminderOffset)?.label ?? "At dose time")
-                                                .font(.system(size: 14))
-                                                .foregroundStyle(Color.nearBlack)
-                                            Image(systemName: "chevron.up.chevron.down")
-                                                .font(.system(size: 10))
-                                                .foregroundStyle(Color.mutedFg.opacity(0.6))
+                                            Text(option.label).tag(option.rawValue)
                                         }
                                     }
-                                    .buttonStyle(.plain)
+                                    .pickerStyle(.menu)
+                                    .tint(Color.nearBlack)
                                 }
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 12)

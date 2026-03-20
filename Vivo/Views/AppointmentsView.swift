@@ -377,25 +377,13 @@ struct AddAppointmentView: View {
                                     .font(.system(size: 11, weight: .semibold))
                                     .foregroundStyle(Color.mutedFg)
                                 Spacer()
-                                Menu {
+                                Picker("", selection: $reminderOption) {
                                     ForEach(AppointmentReminderOption.allCases, id: \.rawValue) { option in
-                                        Button(option.label) {
-                                            var t = Transaction()
-                                            t.disablesAnimations = true
-                                            withTransaction(t) { reminderOption = option.rawValue }
-                                        }
-                                    }
-                                } label: {
-                                    HStack(spacing: 4) {
-                                        Text(AppointmentReminderOption(rawValue: reminderOption)?.label ?? "1 day & 1 hour before")
-                                            .font(.system(size: 14))
-                                            .foregroundStyle(Color.nearBlack)
-                                        Image(systemName: "chevron.up.chevron.down")
-                                            .font(.system(size: 10))
-                                            .foregroundStyle(Color.mutedFg.opacity(0.6))
+                                        Text(option.label).tag(option.rawValue)
                                     }
                                 }
-                                .buttonStyle(.plain)
+                                .pickerStyle(.menu)
+                                .tint(Color.nearBlack)
                             }
                             .padding(.horizontal, 14)
                             .padding(.vertical, 12)
@@ -552,25 +540,13 @@ struct EditAppointmentView: View {
                                     .font(.system(size: 11, weight: .semibold))
                                     .foregroundStyle(Color.mutedFg)
                                 Spacer()
-                                Menu {
+                                Picker("", selection: $reminderOption) {
                                     ForEach(AppointmentReminderOption.allCases, id: \.rawValue) { option in
-                                        Button(option.label) {
-                                            var t = Transaction()
-                                            t.disablesAnimations = true
-                                            withTransaction(t) { reminderOption = option.rawValue }
-                                        }
-                                    }
-                                } label: {
-                                    HStack(spacing: 4) {
-                                        Text(AppointmentReminderOption(rawValue: reminderOption)?.label ?? "1 day & 1 hour before")
-                                            .font(.system(size: 14))
-                                            .foregroundStyle(Color.nearBlack)
-                                        Image(systemName: "chevron.up.chevron.down")
-                                            .font(.system(size: 10))
-                                            .foregroundStyle(Color.mutedFg.opacity(0.6))
+                                        Text(option.label).tag(option.rawValue)
                                     }
                                 }
-                                .buttonStyle(.plain)
+                                .pickerStyle(.menu)
+                                .tint(Color.nearBlack)
                             }
                             .padding(.horizontal, 14)
                             .padding(.vertical, 12)
