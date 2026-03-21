@@ -539,7 +539,6 @@ struct AddMedicationView: View {
     @State private var notes = ""
     @State private var colorIndex = 0
     @State private var reminderOffset: Int = 0
-    @State private var showReminderPicker = false
     @State private var trackPillCount = false
     @State private var pillCount = 30
 
@@ -584,33 +583,37 @@ struct AddMedicationView: View {
                                 if frequency == "Three times daily" {
                                     medicationTimePickerRow(label: "Dose 3", selection: $scheduledTime3)
                                 }
-                                Button { showReminderPicker = true } label: {
+                                Menu {
+                                    ForEach(MedicationReminderOffset.allCases, id: \.rawValue) { option in
+                                        Button(option.label) { reminderOffset = option.rawValue }
+                                    }
+                                } label: {
                                     HStack(spacing: 10) {
                                         Image(systemName: "bell.fill")
                                             .font(.system(size: 14))
                                             .foregroundStyle(Color.primaryTeal)
                                             .frame(width: 20)
-                                        Text("Reminder")
-                                            .font(.system(size: 11, weight: .semibold))
-                                            .foregroundStyle(Color.mutedFg)
-                                        Spacer()
-                                        HStack(spacing: 4) {
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("Reminder")
+                                                .font(.system(size: 11, weight: .semibold))
+                                                .foregroundStyle(Color.mutedFg)
                                             Text(MedicationReminderOffset(rawValue: reminderOffset)?.label ?? "At dose time")
                                                 .font(.system(size: 14))
                                                 .foregroundStyle(Color.nearBlack)
                                                 .lineLimit(1)
-                                                .minimumScaleFactor(0.85)
-                                            Image(systemName: "chevron.up.chevron.down")
-                                                .font(.system(size: 10))
-                                                .foregroundStyle(Color.mutedFg.opacity(0.6))
                                         }
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        Image(systemName: "chevron.up.chevron.down")
+                                            .font(.system(size: 10))
+                                            .foregroundStyle(Color.mutedFg.opacity(0.6))
                                     }
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 12)
-                                    .background(Color.mutedBg.opacity(0.5))
-                                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                    .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 12)
+                                .background(Color.mutedBg.opacity(0.5))
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                             }
                         }
                         FormSection(title: "Color") {
@@ -644,20 +647,8 @@ struct AddMedicationView: View {
             }
             .background(Color.bg)
             .toolbar(.hidden, for: .navigationBar)
-            .sheet(isPresented: $showReminderPicker) {
-                reminderPickerSheet
-            }
         }
         .presentationCornerRadius(24)
-    }
-
-    private var reminderPickerSheet: some View {
-        OptionPickerSheet(
-            title: "Reminder",
-            options: MedicationReminderOffset.allCases.map { ($0.rawValue, $0.label) },
-            selectedValue: reminderOffset,
-            onSelect: { reminderOffset = $0 }
-        )
     }
 
     private func save() {
@@ -694,7 +685,6 @@ struct EditMedicationView: View {
     @State private var colorIndex: Int
     @State private var notes: String
     @State private var reminderOffset: Int
-    @State private var showReminderPicker = false
     @State private var trackPillCount: Bool
     @State private var pillCount: Int
 
@@ -748,33 +738,37 @@ struct EditMedicationView: View {
                                 if frequency == "Three times daily" {
                                     medicationTimePickerRow(label: "Dose 3", selection: $scheduledTime3)
                                 }
-                                Button { showReminderPicker = true } label: {
+                                Menu {
+                                    ForEach(MedicationReminderOffset.allCases, id: \.rawValue) { option in
+                                        Button(option.label) { reminderOffset = option.rawValue }
+                                    }
+                                } label: {
                                     HStack(spacing: 10) {
                                         Image(systemName: "bell.fill")
                                             .font(.system(size: 14))
                                             .foregroundStyle(Color.primaryTeal)
                                             .frame(width: 20)
-                                        Text("Reminder")
-                                            .font(.system(size: 11, weight: .semibold))
-                                            .foregroundStyle(Color.mutedFg)
-                                        Spacer()
-                                        HStack(spacing: 4) {
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("Reminder")
+                                                .font(.system(size: 11, weight: .semibold))
+                                                .foregroundStyle(Color.mutedFg)
                                             Text(MedicationReminderOffset(rawValue: reminderOffset)?.label ?? "At dose time")
                                                 .font(.system(size: 14))
                                                 .foregroundStyle(Color.nearBlack)
                                                 .lineLimit(1)
-                                                .minimumScaleFactor(0.85)
-                                            Image(systemName: "chevron.up.chevron.down")
-                                                .font(.system(size: 10))
-                                                .foregroundStyle(Color.mutedFg.opacity(0.6))
                                         }
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        Image(systemName: "chevron.up.chevron.down")
+                                            .font(.system(size: 10))
+                                            .foregroundStyle(Color.mutedFg.opacity(0.6))
                                     }
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 12)
-                                    .background(Color.mutedBg.opacity(0.5))
-                                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                    .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 12)
+                                .background(Color.mutedBg.opacity(0.5))
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                             }
                         }
                         FormSection(title: "Color") {
@@ -808,20 +802,8 @@ struct EditMedicationView: View {
             }
             .background(Color.bg)
             .toolbar(.hidden, for: .navigationBar)
-            .sheet(isPresented: $showReminderPicker) {
-                reminderPickerSheet
-            }
         }
         .presentationCornerRadius(24)
-    }
-
-    private var reminderPickerSheet: some View {
-        OptionPickerSheet(
-            title: "Reminder",
-            options: MedicationReminderOffset.allCases.map { ($0.rawValue, $0.label) },
-            selectedValue: reminderOffset,
-            onSelect: { reminderOffset = $0 }
-        )
     }
 
     private func save() {
