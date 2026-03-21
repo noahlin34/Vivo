@@ -166,147 +166,159 @@ private struct OnboardingPageView: View {
     }
 
     private var welcomeLayout: some View {
-        VStack(spacing: 0) {
-            Spacer()
-            VStack(spacing: 24) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 32, style: .continuous)
-                        .fill(LinearGradient(colors: page.gradient, startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .frame(width: 120, height: 120)
-                        .warmShadowLg()
-                    Image(systemName: page.icon)
-                        .font(.system(size: 52))
-                        .foregroundStyle(.white)
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 0) {
+                Spacer()
+                VStack(spacing: 24) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 32, style: .continuous)
+                            .fill(LinearGradient(colors: page.gradient, startPoint: .topLeading, endPoint: .bottomTrailing))
+                            .frame(width: 120, height: 120)
+                            .warmShadowLg()
+                        Image(systemName: page.icon)
+                            .font(.system(size: 52))
+                            .foregroundStyle(.white)
+                    }
+                    VStack(spacing: 12) {
+                        Text(page.title)
+                            .font(.system(size: 42, weight: .regular, design: .serif))
+                            .foregroundStyle(Color.nearBlack)
+                            .multilineTextAlignment(.center)
+                        Text(page.body)
+                            .font(.system(size: 17))
+                            .foregroundStyle(Color.mutedFg)
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(4)
+                    }
                 }
-                VStack(spacing: 12) {
-                    Text(page.title)
-                        .font(.system(size: 42, weight: .regular, design: .serif))
-                        .foregroundStyle(Color.nearBlack)
-                        .multilineTextAlignment(.center)
-                    Text(page.body)
-                        .font(.system(size: 17))
-                        .foregroundStyle(Color.mutedFg)
-                        .multilineTextAlignment(.center)
-                        .lineSpacing(4)
-                }
+                Spacer()
+                Spacer()
             }
-            Spacer()
-            Spacer()
+            .padding(.horizontal, 32)
+            .frame(minHeight: UIScreen.main.bounds.height - 200)
         }
-        .padding(.horizontal, 32)
+        .scrollBounceBehavior(.basedOnSize)
     }
 
     private var featureLayout: some View {
-        VStack(spacing: 0) {
-            Spacer()
-            VStack(spacing: 24) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 30, style: .continuous)
-                        .fill(LinearGradient(colors: page.gradient, startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .frame(width: 104, height: 104)
-                        .warmShadowLg()
-                    Image(systemName: page.icon)
-                        .font(.system(size: 44))
-                        .foregroundStyle(.white)
-                }
-                Text(page.title)
-                    .font(.system(size: 28, weight: .regular, design: .serif))
-                    .foregroundStyle(Color.nearBlack)
-                    .multilineTextAlignment(.center)
-                VStack(spacing: 14) {
-                    ForEach(page.bullets.indices, id: \.self) { i in
-                        FeatureBulletRow(bullet: page.bullets[i], gradient: page.gradient)
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 0) {
+                Spacer()
+                VStack(spacing: 24) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 30, style: .continuous)
+                            .fill(LinearGradient(colors: page.gradient, startPoint: .topLeading, endPoint: .bottomTrailing))
+                            .frame(width: 104, height: 104)
+                            .warmShadowLg()
+                        Image(systemName: page.icon)
+                            .font(.system(size: 44))
+                            .foregroundStyle(.white)
                     }
-                }
-                .padding(20)
-                .background(Color.cardBg)
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .warmShadow()
-            }
-            Spacer()
-            Spacer()
-        }
-        .padding(.horizontal, 32)
-    }
-
-    private var notificationLayout: some View {
-        VStack(spacing: 0) {
-            Spacer()
-            VStack(spacing: 24) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 30, style: .continuous)
-                        .fill(LinearGradient(colors: page.gradient, startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .frame(width: 104, height: 104)
-                        .warmShadowLg()
-                    Image(systemName: page.icon)
-                        .font(.system(size: 44))
-                        .foregroundStyle(.white)
-                }
-                VStack(spacing: 12) {
                     Text(page.title)
                         .font(.system(size: 28, weight: .regular, design: .serif))
                         .foregroundStyle(Color.nearBlack)
                         .multilineTextAlignment(.center)
-                    Text(page.body)
-                        .font(.system(size: 16))
-                        .foregroundStyle(Color.mutedFg)
-                        .multilineTextAlignment(.center)
-                        .lineSpacing(4)
-                }
-                VStack(spacing: 12) {
-                    Button {
-                        if notificationsDenied {
-                            if let url = URL(string: UIApplication.openSettingsURLString) {
-                                UIApplication.shared.open(url)
-                            }
-                        } else {
-                            UNUserNotificationCenter.current()
-                                .requestAuthorization(options: [.alert, .sound]) { granted, _ in
-                                    DispatchQueue.main.async {
-                                        notificationsEnabled = granted
-                                        if !granted { notificationsDenied = true }
-                                    }
-                                }
+                    VStack(spacing: 14) {
+                        ForEach(page.bullets.indices, id: \.self) { i in
+                            FeatureBulletRow(bullet: page.bullets[i], gradient: page.gradient)
                         }
-                    } label: {
-                        HStack(spacing: 8) {
-                            if notificationsEnabled {
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 15, weight: .semibold))
-                            } else if notificationsDenied {
-                                Image(systemName: "arrow.up.right")
-                                    .font(.system(size: 15, weight: .semibold))
-                            }
-                            Text(notificationsEnabled ? "Notifications Enabled" : notificationsDenied ? "Open Settings" : "Enable Notifications")
-                                .font(.system(size: 17, weight: .semibold))
-                        }
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background {
-                            if notificationsEnabled {
-                                Color.mutedFg
-                            } else if notificationsDenied {
-                                LinearGradient(colors: [Color.amberStart, Color.amberEnd], startPoint: .leading, endPoint: .trailing)
-                            } else {
-                                LinearGradient(colors: page.gradient, startPoint: .leading, endPoint: .trailing)
-                            }
-                        }
-                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                        .warmShadow()
                     }
-                    .buttonStyle(.plain)
-                    .disabled(notificationsEnabled)
-
-                    Text("You can change this later in Settings")
-                        .font(.system(size: 13))
-                        .foregroundStyle(Color.mutedFg)
+                    .padding(20)
+                    .background(Color.cardBg)
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .warmShadow()
                 }
+                Spacer()
+                Spacer()
             }
-            Spacer()
-            Spacer()
+            .padding(.horizontal, 32)
+            .frame(minHeight: UIScreen.main.bounds.height - 200)
         }
-        .padding(.horizontal, 32)
+        .scrollBounceBehavior(.basedOnSize)
+    }
+
+    private var notificationLayout: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 0) {
+                Spacer()
+                VStack(spacing: 24) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 30, style: .continuous)
+                            .fill(LinearGradient(colors: page.gradient, startPoint: .topLeading, endPoint: .bottomTrailing))
+                            .frame(width: 104, height: 104)
+                            .warmShadowLg()
+                        Image(systemName: page.icon)
+                            .font(.system(size: 44))
+                            .foregroundStyle(.white)
+                    }
+                    VStack(spacing: 12) {
+                        Text(page.title)
+                            .font(.system(size: 28, weight: .regular, design: .serif))
+                            .foregroundStyle(Color.nearBlack)
+                            .multilineTextAlignment(.center)
+                        Text(page.body)
+                            .font(.system(size: 16))
+                            .foregroundStyle(Color.mutedFg)
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(4)
+                    }
+                    VStack(spacing: 12) {
+                        Button {
+                            if notificationsDenied {
+                                if let url = URL(string: UIApplication.openSettingsURLString) {
+                                    UIApplication.shared.open(url)
+                                }
+                            } else {
+                                UNUserNotificationCenter.current()
+                                    .requestAuthorization(options: [.alert, .sound]) { granted, _ in
+                                        DispatchQueue.main.async {
+                                            notificationsEnabled = granted
+                                            if !granted { notificationsDenied = true }
+                                        }
+                                    }
+                            }
+                        } label: {
+                            HStack(spacing: 8) {
+                                if notificationsEnabled {
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: 15, weight: .semibold))
+                                } else if notificationsDenied {
+                                    Image(systemName: "arrow.up.right")
+                                        .font(.system(size: 15, weight: .semibold))
+                                }
+                                Text(notificationsEnabled ? "Notifications Enabled" : notificationsDenied ? "Open Settings" : "Enable Notifications")
+                                    .font(.system(size: 17, weight: .semibold))
+                            }
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background {
+                                if notificationsEnabled {
+                                    Color.mutedFg
+                                } else if notificationsDenied {
+                                    LinearGradient(colors: [Color.amberStart, Color.amberEnd], startPoint: .leading, endPoint: .trailing)
+                                } else {
+                                    LinearGradient(colors: page.gradient, startPoint: .leading, endPoint: .trailing)
+                                }
+                            }
+                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                            .warmShadow()
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(notificationsEnabled)
+
+                        Text("You can change this later in Settings")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color.mutedFg)
+                    }
+                }
+                Spacer()
+                Spacer()
+            }
+            .padding(.horizontal, 32)
+            .frame(minHeight: UIScreen.main.bounds.height - 200)
+        }
+        .scrollBounceBehavior(.basedOnSize)
         .onAppear { checkNotificationStatus() }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active { checkNotificationStatus() }
