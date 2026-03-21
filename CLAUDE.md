@@ -370,6 +370,42 @@ Don't use `UIColor(Color(hex:))` — it can cause SourceKit errors. Use direct R
 UIColor(red: 246/255, green: 242/255, blue: 236/255, alpha: 0.97)
 ```
 
+### `Menu` label animation jitter (text flies left/center on open/close)
+
+SwiftUI's `Menu` animates its label from the view's natural (unconstrained) size to its laid-out size on every open/close. If the container holding the label has no fixed width, the text visibly slides around.
+
+**Root cause:** the `VStack` or other container wrapping the `Menu` label doesn't have a constrained width, so SwiftUI can't establish a stable frame before animating.
+
+**Fix:** give the label's inner container `.frame(maxWidth: .infinity, alignment: .leading)` so it has a fixed anchor, and add `.contentShape(Rectangle())` so the full row is tappable:
+
+```swift
+// WRONG — VStack has no width constraint; label jitters on open/close
+Menu { ... } label: {
+    HStack {
+        Text(selectedValue)
+        Spacer()
+        Image(systemName: "chevron.up.chevron.down")
+    }
+}
+.buttonStyle(.plain)
+
+// CORRECT — VStack anchors the width; no animation jitter
+Menu { ... } label: {
+    HStack {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Label")
+            Text(selectedValue)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        Image(systemName: "chevron.up.chevron.down")
+    }
+    .contentShape(Rectangle())
+}
+.buttonStyle(.plain)
+```
+
+Do **not** work around this by replacing `Menu` with a `Button` that opens a separate sheet picker — use `Menu` with the frame fix above.
+
 ## Navigation & Sheets Pattern
 
 Each tab view uses:
