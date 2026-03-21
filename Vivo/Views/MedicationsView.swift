@@ -148,6 +148,7 @@ struct MedicationsView: View {
                 Spacer(minLength: 100)
             }
         }
+        .scrollDismissesKeyboard(.interactively)
         .background(Color.bg)
         .confirmationDialog(
             "Remove \(medicationToDelete?.name ?? "Medication")?",

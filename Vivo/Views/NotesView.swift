@@ -106,6 +106,7 @@ struct NotesView: View {
                 Spacer(minLength: 100)
             }
         }
+        .scrollDismissesKeyboard(.interactively)
         .background(Color.bg)
         .sheet(isPresented: $showAdd) { AddNoteView() }
         .sheet(item: $selected) { note in

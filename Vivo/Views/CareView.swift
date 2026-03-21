@@ -181,6 +181,7 @@ struct CareView: View {
                 Spacer(minLength: 100)
             }
         }
+        .scrollDismissesKeyboard(.interactively)
         .background(Color.bg)
         .sheet(isPresented: $showAddDoctor) { AddDoctorView() }
         .sheet(isPresented: $showAddAppointment) { AddAppointmentView() }

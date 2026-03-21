@@ -198,6 +198,7 @@ struct VitalsView: View {
                 Spacer(minLength: 100)
             }
         }
+        .scrollDismissesKeyboard(.interactively)
         .background(Color.bg)
         .sheet(isPresented: $showAdd) { AddVitalView() }
         .sheet(item: $selected) { vital in
