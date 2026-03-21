@@ -2,12 +2,11 @@
 
 ## Project Overview
 
-Vivo is a personal health management iOS app built with SwiftUI + SwiftData + CloudKit. It lets users track medications, doctors, appointments, health notes, and vitals, synced privately via iCloud.
+Vivo is a personal health management iOS app built with SwiftUI + SwiftData. It lets users track medications, doctors, appointments, health notes, and vitals, stored locally on-device.
 
 ## Key Facts
 
 - **Bundle ID**: `com.noahlin.Vivo`
-- **CloudKit container**: `iCloud.com.noahlin.Vivo`
 - **Minimum deployment**: iOS 18.0
 - **Swift version**: 5.0
 - **Team**: TT5ULK557T
@@ -40,10 +39,10 @@ After making changes, always run a build to confirm no compiler errors before fi
 
 ```
 Vivo/
-├── VivoApp.swift          # @main, ModelContainer + CloudKit config
+├── VivoApp.swift          # @main, plain ModelContainer (local SwiftData, no CloudKit)
 ├── ContentView.swift      # TabView root + CustomTabBar (5 tabs)
-├── Info.plist             # UIBackgroundModes: remote-notification
-├── Vivo.entitlements      # iCloud/CloudKit + APS entitlements
+├── Info.plist             # UILaunchScreen, ITSAppUsesNonExemptEncryption
+├── Vivo.entitlements      # HealthKit only
 ├── Models/
 │   ├── Medication.swift
 │   ├── Doctor.swift
@@ -51,9 +50,11 @@ Vivo/
 │   ├── HealthNote.swift
 │   └── VitalRecord.swift
 ├── Services/
-│   └── HealthKitService.swift  # Read-only HealthKit import
+│   ├── HealthKitService.swift     # Read-only HealthKit import
+│   └── NotificationService.swift  # ensureAuthorizedThenSchedule helper
 └── Views/
     ├── SharedComponents.swift   # Design tokens, shared views, helpers
+    ├── LaunchGateView.swift     # Onboarding gate (@AppStorage hasCompletedOnboarding)
     ├── OnboardingView.swift     # 4-page swipeable onboarding flow
     ├── HomeView.swift
     ├── MedicationsView.swift
@@ -71,9 +72,12 @@ All models use `@Model final class` and are registered in `VivoApp.swift`.
 ### Medication
 
 ```swift
-name, dosage, frequency, scheduledTime(Date), colorIndex(Int 0-5), notes(String),
-takenDates([Date]), pillCount(Int?), createdAt
+name, dosage, frequency, scheduledTime(Date), scheduledTime2(Date?), scheduledTime3(Date?),
+colorIndex(Int 0-5), notes(String), takenDates([Date]), pillCount(Int?),
+reminderOffset(Int), createdAt
 ```
+
+`reminderOffset` maps to `MedicationReminderOffset` (in MedicationsView.swift): `-1`=None, `0`=At dose time, `5/15/30/60`=minutes before.
 
 Computed properties:
 - `dosesRequired: Int` — 0 for "As needed", 1/2/3 based on frequency
@@ -96,10 +100,12 @@ Note: `colorIndex` exists on the model but doctor colors in the UI are derived f
 
 ```swift
 title, doctorName, doctor(Doctor?, @Relationship deleteRule: .nullify),
-date(Date), location, notes, createdAt
+date(Date), location, notes, reminderOption(String), createdAt
 ```
 
 Computed: `displayDoctorName` — returns `doctor?.name ?? doctorName`
+
+`reminderOption` maps to `AppointmentReminderOption` (in AppointmentsView.swift): `"none"`, `"at_time"`, `"5_min"`, `"15_min"`, `"30_min"`, `"1_hour"`, `"2_hours"`, `"1_day"`, `"1_day_1_hour"` (default).
 
 ### HealthNote
 
@@ -120,12 +126,6 @@ notes(String), source(String, default "manual"), recordedAt(Date), createdAt
 
 `VitalType` enum (not stored — helper): `bloodPressure`, `weight`, `heartRate`, `bloodSugar` with `icon`, `unit`, `hasDualValue`, `formatValue()`, `color`/`gradient`. Blood Pressure uses `secondaryValue` for diastolic.
 
-### CloudKit
-
-Sync is configured with `.private("iCloud.com.noahlin.Vivo")`. Testing sync requires a physical device signed into iCloud with the container created in the Apple Developer Portal.
-
-**Simulator**: CloudKit is skipped on simulator via `#if targetEnvironment(simulator)` — uses local-only SwiftData storage.
-
 ### HealthKit Integration
 
 Read-only, on-demand import of vitals from Apple Health.
@@ -141,33 +141,41 @@ Read-only, on-demand import of vitals from Apple Health.
 
 ## Notification Systems
 
+Authorization is handled by `NotificationService.ensureAuthorizedThenSchedule` (in `Services/NotificationService.swift`), which requests permission if needed before scheduling.
+
 ### MedicationNotifications (in MedicationsView.swift)
 
 - Base ID derived from `medication.createdAt.timeIntervalSince1970`
 - "As needed" meds: no notifications
-- Scheduled meds: repeating calendar triggers at `scheduledTime` with hour offsets:
-  - Once daily: `[0]`
-  - Twice daily: `[0, 12]`
-  - Three times daily: `[0, 8, 16]`
+- `reminderOffset == -1` (None): notifications cancelled, none scheduled
+- Scheduled meds: one repeating `UNCalendarNotificationTrigger` per dose time, fired `reminderOffset` minutes before each dose
+  - Once daily: fires relative to `scheduledTime`
+  - Twice daily: fires relative to `scheduledTime` and `scheduledTime2`
+  - Three times daily: fires relative to `scheduledTime`, `scheduledTime2`, `scheduledTime3`
 - Identifiers: `"\(base)-0"`, `"\(base)-1"`, `"\(base)-2"`
 
 ### AppointmentNotifications (in AppointmentsView.swift)
 
 - Base ID derived from `appointment.createdAt.timeIntervalSince1970`
-- Fires **1 day before** and **1 hour before** (non-repeating)
-- Body includes doctor name via `displayDoctorName`
+- Fires based on `appointment.reminderOption` — one non-repeating trigger per offset in `AppointmentReminderOption.offsets`
+- `"none"` option: no notifications scheduled
+- Body format: `"\(title) with \(displayDoctorName)"`
 - Only schedules if fire time is in the future
-- Identifiers: `"\(base)-day"`, `"\(base)-hour"`
+- Identifiers: `"\(base)-0"`, `"\(base)-1"` (index into offsets array)
+- Cancel also removes legacy `"\(base)-day"` / `"\(base)-hour"` identifiers for migration safety
 
 Both notification enums have `schedule(for:)` and `cancel(for:)` static methods.
 
-## Onboarding (OnboardingView.swift)
+## Onboarding
 
-- 4 swipeable pages (TabView `.page` style): Welcome → Medications → Doctors → Notes
-- `@AppStorage("hasCompletedOnboarding")` toggles between OnboardingView and ContentView
+`LaunchGateView` (in `LaunchGateView.swift`) is the app's entry point. It reads `@AppStorage("hasCompletedOnboarding")` and shows either `OnboardingView` or `ContentView` with a `.easeInOut` opacity transition.
+
+`OnboardingView`:
+- 4 swipeable pages (TabView `.page` style): Welcome → Medications → Care → Notifications
 - Skip button appears on pages 2–4
 - Animated dot indicator (selected dot 22pt wide, others 8pt)
-- "Next" button advances; "Get Started" on final page completes onboarding
+- "Next" button advances; "Get Started" on final page sets `hasCompletedOnboarding = true`
+- Each page layout is wrapped in `ScrollView(.scrollBounceBehavior(.basedOnSize))` as a safety net for short screens
 
 ## Design System
 
@@ -393,7 +401,7 @@ Each tab view uses:
 - **Dose toggle** on each card: checkmark for once daily, progress dots for multi-dose, +counter for as-needed
 - **Swipe-to-delete** with confirmation dialog
 - **Detail sheet**: 7-day adherence calendar, supply tracking with "Log Refill" button
-- **Add/Edit views**: name, dosage, frequency picker, time picker, color picker (6 inline), refill tracking toggle + stepper
+- **Add/Edit views**: name, dosage, frequency picker, per-dose time pickers (1–3 depending on frequency), reminder offset picker, color picker (6 inline), refill tracking toggle + stepper
 
 ### CareView (tab 2)
 - Combined doctors + appointments view
@@ -445,14 +453,13 @@ SwiftData `@Model` objects are reference types with `@Observable`. Mutating thei
 ## Entitlements & Configuration
 
 **Vivo.entitlements**:
-- `aps-environment`: development (push notifications)
 - `com.apple.developer.healthkit`: true (HealthKit read access)
 - `com.apple.developer.healthkit.access`: empty array (no specific clinical types)
-- `com.apple.developer.icloud-container-identifiers`: `iCloud.com.noahlin.Vivo`
-- `com.apple.developer.icloud-services`: CloudKit
 
-**Info.plist**:
-- `NSHealthShareUsageDescription`: read-only health data access for vitals import
-- `UIBackgroundModes`: `remote-notification` (for CloudKit silent push sync)
+**Info.plist** (actual file — minimal):
+- `ITSAppUsesNonExemptEncryption`: false
+- `UILaunchScreen`: `{UIColorName: LaunchBackground}`
+
+`NSHealthShareUsageDescription` is set via `INFOPLIST_KEY_NSHealthShareUsageDescription` in the Xcode project build settings (not in Info.plist directly).
 
 **Assets**: AccentColor + AppIcon in asset catalog. All colors defined in code via `Color(hex:)`, not asset colors.
