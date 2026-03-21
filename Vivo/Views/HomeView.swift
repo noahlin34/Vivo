@@ -153,7 +153,13 @@ struct HomeView: View {
                     heroChip(
                         icon: "calendar",
                         label: "Next Appointment",
-                        value: nextAppointment.map { $0.date.formatted(.dateTime.month(.wide).day().hour().minute()) } ?? "None scheduled"
+                        value: nextAppointment.map { appt -> String in
+                        let cal = Calendar.current
+                        let time = appt.date.formatted(.dateTime.hour().minute())
+                        if cal.isDateInToday(appt.date) { return "Today at \(time)" }
+                        if cal.isDateInTomorrow(appt.date) { return "Tomorrow at \(time)" }
+                        return appt.date.formatted(.dateTime.month(.wide).day().hour().minute())
+                    } ?? "None scheduled"
                     )
                 }
                 .buttonStyle(.plain)
