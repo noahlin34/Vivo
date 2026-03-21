@@ -443,15 +443,17 @@ struct AddAppointmentView: View {
                             Text(selectedDoctor?.name ?? "Select doctor")
                                 .font(.system(size: 15))
                                 .foregroundStyle(selectedDoctor == nil ? Color.mutedFg : Color.nearBlack)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                            Spacer()
                             Image(systemName: "chevron.up.chevron.down")
                                 .font(.system(size: 10))
                                 .foregroundStyle(Color.mutedFg.opacity(0.6))
                         }
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
@@ -625,15 +627,17 @@ struct EditAppointmentView: View {
                             Text(selectedDoctor?.name ?? "Select doctor")
                                 .font(.system(size: 15))
                                 .foregroundStyle(selectedDoctor == nil ? Color.mutedFg : Color.nearBlack)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                            Spacer()
                             Image(systemName: "chevron.up.chevron.down")
                                 .font(.system(size: 10))
                                 .foregroundStyle(Color.mutedFg.opacity(0.6))
                         }
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
