@@ -416,7 +416,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Today's Medications")
-                    .font(.system(size: 18, weight: .medium))
+                    .font(.system(size: 18, weight: .medium, design: .serif))
                     .foregroundStyle(Color.nearBlack)
                 Spacer()
                 if medications.count > 3 {
@@ -474,7 +474,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Upcoming")
-                    .font(.system(size: 18, weight: .medium))
+                    .font(.system(size: 18, weight: .medium, design: .serif))
                     .foregroundStyle(Color.nearBlack)
                 Spacer()
                 if allUpcomingAppointments.count > 3 {
@@ -532,7 +532,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Care Team")
-                    .font(.system(size: 18, weight: .medium))
+                    .font(.system(size: 18, weight: .medium, design: .serif))
                     .foregroundStyle(Color.nearBlack)
                 Spacer()
                 Text("\(doctors.count) doctor\(doctors.count == 1 ? "" : "s")")
@@ -591,7 +591,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Recent Vitals")
-                    .font(.system(size: 18, weight: .medium))
+                    .font(.system(size: 18, weight: .medium, design: .serif))
                     .foregroundStyle(Color.nearBlack)
                 Spacer()
                 if vitals.count > 3 {
@@ -637,7 +637,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Recent Notes")
-                    .font(.system(size: 18, weight: .medium))
+                    .font(.system(size: 18, weight: .medium, design: .serif))
                     .foregroundStyle(Color.nearBlack)
                 Spacer()
                 if notes.count > 2 {
