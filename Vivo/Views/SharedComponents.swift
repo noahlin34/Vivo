@@ -774,15 +774,15 @@ struct FormColorPicker: View {
                             if selection == i {
                                 Circle()
                                     .strokeBorder(Color(hex: colors[i]), lineWidth: 2)
-                                    .frame(width: 44, height: 44)
+                                    .frame(width: 40, height: 40)
                             }
                             Circle()
                                 .fill(Color(hex: colors[i]))
-                                .frame(width: 36, height: 36)
+                                .frame(width: 32, height: 32)
                             if selection == i {
                                 Circle()
-                                    .strokeBorder(.white, lineWidth: 3)
-                                    .frame(width: 36, height: 36)
+                                    .strokeBorder(.white, lineWidth: 2.5)
+                                    .frame(width: 32, height: 32)
                             }
                         }
                         Text(names[i])
