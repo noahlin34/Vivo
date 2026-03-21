@@ -45,6 +45,13 @@ struct HomeView: View {
         guard todaysTotalCount > 0 else { return 0 }
         return Double(todaysTakenCount) / Double(todaysTotalCount)
     }
+    private var timeOfDayGreeting: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        if hour < 12 { return "Good morning" }
+        if hour < 17 { return "Good afternoon" }
+        return "Good evening"
+    }
+
     private var progressLabel: String {
         if todaysTotalCount == 0 { return "No meds scheduled" }
         if todaysTakenCount == todaysTotalCount { return "All done for today!" }
@@ -121,7 +128,7 @@ struct HomeView: View {
                     .foregroundStyle(.white)
                     .padding(.top, 4)
 
-                Text("Your daily wellness overview")
+                Text(timeOfDayGreeting)
                     .font(.system(size: 14))
                     .foregroundStyle(.white.opacity(0.6))
                     .padding(.top, 2)
