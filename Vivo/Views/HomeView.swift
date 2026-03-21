@@ -522,7 +522,7 @@ struct HomeView: View {
                     .font(.system(size: 18, weight: .medium))
                     .foregroundStyle(Color.nearBlack)
                 Spacer()
-                Text("\(doctors.count) doctors")
+                Text("\(doctors.count) doctor\(doctors.count == 1 ? "" : "s")")
                     .font(.system(size: 12))
                     .foregroundStyle(Color.tealEnd)
                     .padding(.horizontal, 10)
