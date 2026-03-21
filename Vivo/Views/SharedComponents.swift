@@ -157,6 +157,8 @@ struct FormToolbar: View {
             Text(title)
                 .font(.system(size: 16, weight: .medium, design: .serif))
                 .foregroundStyle(Color.nearBlack)
+                .lineLimit(1)
+                .padding(.horizontal, 70)
             HStack {
                 Button(action: onCancel) {
                     Text("Cancel")
@@ -194,6 +196,8 @@ struct DetailToolbar: View {
             Text(title)
                 .font(.system(size: 16, weight: .medium, design: .serif))
                 .foregroundStyle(Color.nearBlack)
+                .lineLimit(1)
+                .padding(.horizontal, 50)
             HStack {
                 Button(action: onDone) {
                     Text("Done")
