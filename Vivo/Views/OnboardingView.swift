@@ -6,123 +6,26 @@
 import SwiftUI
 import UserNotifications
 
-// MARK: - Data model
+// MARK: - Progress Bar
 
-private enum PageKind { case welcome, feature, notification }
-
-private struct FeatureBullet {
-    let icon: String
-    let text: String
-}
-
-private struct OnboardingPage {
-    let icon: String
-    let gradient: [Color]
-    let title: String
-    let body: String
-    let bullets: [FeatureBullet]
-    let kind: PageKind
-}
-
-private let onboardingPages: [OnboardingPage] = [
-    // 0 — Welcome
-    OnboardingPage(
-        icon: "heart.fill",
-        gradient: [Color.tealStart, Color.tealEnd],
-        title: "Vivo",
-        body: "Your medications, doctors, vitals, and health notes — all in one private, synced place.",
-        bullets: [],
-        kind: .welcome
-    ),
-    // 1 — Medications
-    OnboardingPage(
-        icon: "pill.fill",
-        gradient: [Color.tealStart, Color.tealEnd],
-        title: "Never miss a dose",
-        body: "",
-        bullets: [
-            FeatureBullet(icon: "bell.fill", text: "Schedule daily reminders for each medication"),
-            FeatureBullet(icon: "pills.fill", text: "Track pill supply with low-refill warnings"),
-            FeatureBullet(icon: "checkmark.circle.fill", text: "Tap to log doses and view 7-day adherence"),
-        ],
-        kind: .feature
-    ),
-    // 2 — Care Team
-    OnboardingPage(
-        icon: "stethoscope",
-        gradient: [Color.amberStart, Color.amberEnd],
-        title: "Your care team, organized",
-        body: "",
-        bullets: [
-            FeatureBullet(icon: "person.crop.circle.fill", text: "Save doctor contact info by specialty"),
-            FeatureBullet(icon: "calendar.badge.clock", text: "Track appointments with timely reminders"),
-            FeatureBullet(icon: "phone.fill", text: "Tap to call or email directly from the app"),
-        ],
-        kind: .feature
-    ),
-    // 3 — Vitals (new)
-    OnboardingPage(
-        icon: "waveform.path.ecg",
-        gradient: [Color.roseStart, Color.roseEnd],
-        title: "Monitor your vitals",
-        body: "",
-        bullets: [
-            FeatureBullet(icon: "staroflife.fill", text: "Log blood pressure, weight, heart rate, and blood sugar"),
-            FeatureBullet(icon: "chart.line.uptrend.xyaxis", text: "View 30-day trend charts for each vital type"),
-            FeatureBullet(icon: "heart.fill", text: "Import readings directly from Apple Health"),
-        ],
-        kind: .feature
-    ),
-    // 4 — Notes
-    OnboardingPage(
-        icon: "note.text",
-        gradient: [Color.purpleStart, Color.purpleEnd],
-        title: "Track how you feel",
-        body: "",
-        bullets: [
-            FeatureBullet(icon: "square.and.pencil", text: "Log symptoms, questions, and health milestones"),
-            FeatureBullet(icon: "square.grid.2x2.fill", text: "Organize notes across six categories"),
-            FeatureBullet(icon: "magnifyingglass", text: "Search and filter to find what you need"),
-        ],
-        kind: .feature
-    ),
-    // 5 — Notifications
-    OnboardingPage(
-        icon: "bell.badge.fill",
-        gradient: [Color.tealStart, Color.tealEnd],
-        title: "Stay on track",
-        body: "Allow notifications so Vivo can remind you to take medications and alert you before appointments.",
-        bullets: [],
-        kind: .notification
-    ),
-]
-
-// MARK: - Feature bullet row
-
-private struct FeatureBulletRow: View {
-    let bullet: FeatureBullet
-    let gradient: [Color]
+private struct ProgressBar: View {
+    let totalPages: Int
+    let currentPage: Int
 
     var body: some View {
-        HStack(spacing: 14) {
-            ZStack {
-                Circle()
-                    .fill(LinearGradient(colors: gradient, startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .frame(width: 36, height: 36)
-                Image(systemName: bullet.icon)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(.white)
+        HStack(spacing: 6) {
+            ForEach(0..<totalPages, id: \.self) { i in
+                Capsule()
+                    .fill(i <= currentPage ? Color.primaryTeal : Color.mutedBg)
+                    .frame(height: 4)
+                    .animation(.spring(response: 0.45, dampingFraction: 0.85), value: currentPage)
             }
-            Text(bullet.text)
-                .font(.system(size: 15))
-                .foregroundStyle(Color.nearBlack)
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer()
         }
+        .padding(.horizontal, 24)
     }
 }
 
-// MARK: - Skip warning toast
+// MARK: - Skip Warning Toast
 
 private struct SkipWarningToast: View {
     var body: some View {
@@ -141,127 +44,332 @@ private struct SkipWarningToast: View {
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .warmShadow()
         .padding(.horizontal, 20)
-        .padding(.top, 60)
     }
 }
 
-// MARK: - Per-page sub-view
+// MARK: - Page 0: Welcome
 
-private struct OnboardingPageView: View {
-    let page: OnboardingPage
-    @Binding var notificationsEnabled: Bool
-    @State private var notificationsDenied: Bool = false
-    @Environment(\.scenePhase) private var scenePhase
+private struct WelcomePage: View {
+    @State private var iconVisible = false
+    @State private var titleVisible = false
+    @State private var taglineVisible = false
+    @State private var subtitleVisible = false
 
     var body: some View {
-        Group {
-            if page.kind == .welcome {
-                welcomeLayout
-            } else if page.kind == .notification {
-                notificationLayout
-            } else {
-                featureLayout
-            }
-        }
-    }
-
-    private var welcomeLayout: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
                 Spacer()
-                VStack(spacing: 24) {
+                VStack(spacing: 28) {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 32, style: .continuous)
-                            .fill(LinearGradient(colors: page.gradient, startPoint: .topLeading, endPoint: .bottomTrailing))
-                            .frame(width: 120, height: 120)
+                        RoundedRectangle(cornerRadius: 28, style: .continuous)
+                            .fill(LinearGradient(colors: [Color.tealStart, Color.tealEnd], startPoint: .topLeading, endPoint: .bottomTrailing))
+                            .frame(width: 100, height: 100)
                             .warmShadowLg()
-                        Image(systemName: page.icon)
-                            .font(.system(size: 52))
-                            .foregroundStyle(.white)
-                    }
-                    VStack(spacing: 12) {
-                        Text(page.title)
-                            .font(.system(size: 42, weight: .regular, design: .serif))
-                            .foregroundStyle(Color.nearBlack)
-                            .multilineTextAlignment(.center)
-                        Text(page.body)
-                            .font(.system(size: 17))
-                            .foregroundStyle(Color.mutedFg)
-                            .multilineTextAlignment(.center)
-                            .lineSpacing(4)
-                    }
-                }
-                Spacer()
-                Spacer()
-            }
-            .padding(.horizontal, 32)
-            .frame(minHeight: UIScreen.main.bounds.height - 200)
-        }
-        .scrollBounceBehavior(.basedOnSize)
-    }
-
-    private var featureLayout: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: 0) {
-                Spacer()
-                VStack(spacing: 24) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 30, style: .continuous)
-                            .fill(LinearGradient(colors: page.gradient, startPoint: .topLeading, endPoint: .bottomTrailing))
-                            .frame(width: 104, height: 104)
-                            .warmShadowLg()
-                        Image(systemName: page.icon)
+                        Image(systemName: "heart.fill")
                             .font(.system(size: 44))
                             .foregroundStyle(.white)
                     }
-                    Text(page.title)
-                        .font(.system(size: 28, weight: .regular, design: .serif))
-                        .foregroundStyle(Color.nearBlack)
-                        .multilineTextAlignment(.center)
-                    VStack(spacing: 14) {
-                        ForEach(page.bullets.indices, id: \.self) { i in
-                            FeatureBulletRow(bullet: page.bullets[i], gradient: page.gradient)
-                        }
-                    }
-                    .padding(20)
-                    .background(Color.cardBg)
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .warmShadow()
-                }
-                Spacer()
-                Spacer()
-            }
-            .padding(.horizontal, 32)
-            .frame(minHeight: UIScreen.main.bounds.height - 200)
-        }
-        .scrollBounceBehavior(.basedOnSize)
-    }
+                    .opacity(iconVisible ? 1 : 0)
+                    .scaleEffect(iconVisible ? 1 : 0.7)
 
-    private var notificationLayout: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: 0) {
-                Spacer()
-                VStack(spacing: 24) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 30, style: .continuous)
-                            .fill(LinearGradient(colors: page.gradient, startPoint: .topLeading, endPoint: .bottomTrailing))
-                            .frame(width: 104, height: 104)
-                            .warmShadowLg()
-                        Image(systemName: page.icon)
-                            .font(.system(size: 44))
-                            .foregroundStyle(.white)
-                    }
                     VStack(spacing: 12) {
-                        Text(page.title)
-                            .font(.system(size: 28, weight: .regular, design: .serif))
+                        Text("Vivo")
+                            .font(.system(size: 48, weight: .regular, design: .serif))
+                            .foregroundStyle(Color.nearBlack)
+                            .opacity(titleVisible ? 1 : 0)
+                            .offset(y: titleVisible ? 0 : 12)
+
+                        Text("Your health, beautifully organized.")
+                            .font(.system(size: 20, weight: .medium))
                             .foregroundStyle(Color.nearBlack)
                             .multilineTextAlignment(.center)
-                        Text(page.body)
+                            .opacity(taglineVisible ? 1 : 0)
+                            .offset(y: taglineVisible ? 0 : 10)
+
+                        Text("Track medications, vitals, appointments, and notes")
                             .font(.system(size: 16))
                             .foregroundStyle(Color.mutedFg)
                             .multilineTextAlignment(.center)
-                            .lineSpacing(4)
+                            .lineSpacing(3)
+                            .opacity(subtitleVisible ? 1 : 0)
+                            .offset(y: subtitleVisible ? 0 : 10)
                     }
+                }
+                Spacer()
+                Spacer()
+            }
+            .padding(.horizontal, 32)
+            .frame(minHeight: UIScreen.main.bounds.height - 200)
+        }
+        .scrollBounceBehavior(.basedOnSize)
+        .onAppear { triggerStagger() }
+    }
+
+    private func triggerStagger() {
+        iconVisible = false; titleVisible = false; taglineVisible = false; subtitleVisible = false
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.8).delay(0.1)) { iconVisible = true }
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.8).delay(0.25)) { titleVisible = true }
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.8).delay(0.4)) { taglineVisible = true }
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.8).delay(0.55)) { subtitleVisible = true }
+    }
+}
+
+// MARK: - Page 1: Privacy
+
+private struct PrivacyCard: View {
+    let icon: String
+    let label: String
+    let description: String
+    let visible: Bool
+
+    var body: some View {
+        HStack(spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(LinearGradient(colors: [Color.tealStart, Color.tealEnd], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .frame(width: 44, height: 44)
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.nearBlack)
+                Text(description)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.mutedFg)
+            }
+            Spacer()
+        }
+        .padding(16)
+        .background(Color.cardBg)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .warmShadow()
+        .opacity(visible ? 1 : 0)
+        .offset(y: visible ? 0 : 20)
+    }
+}
+
+private struct PrivacyPage: View {
+    @State private var headerVisible = false
+    @State private var card0Visible = false
+    @State private var card1Visible = false
+    @State private var card2Visible = false
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 28) {
+                VStack(spacing: 20) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 28, style: .continuous)
+                            .fill(LinearGradient(colors: [Color.tealStart, Color.tealEnd], startPoint: .topLeading, endPoint: .bottomTrailing))
+                            .frame(width: 90, height: 90)
+                            .warmShadowLg()
+                        Image(systemName: "lock.shield.fill")
+                            .font(.system(size: 38))
+                            .foregroundStyle(.white)
+                    }
+                    VStack(spacing: 10) {
+                        Text("Your data stays yours.")
+                            .font(.system(size: 28, weight: .regular, design: .serif))
+                            .foregroundStyle(Color.nearBlack)
+                            .multilineTextAlignment(.center)
+                        Text("No account required. No servers. No tracking.")
+                            .font(.system(size: 16))
+                            .foregroundStyle(Color.mutedFg)
+                            .multilineTextAlignment(.center)
+                    }
+                }
+                .opacity(headerVisible ? 1 : 0)
+                .offset(y: headerVisible ? 0 : 16)
+
+                VStack(spacing: 12) {
+                    PrivacyCard(
+                        icon: "iphone",
+                        label: "On-Device Storage",
+                        description: "Everything lives on your iPhone",
+                        visible: card0Visible
+                    )
+                    PrivacyCard(
+                        icon: "wifi.slash",
+                        label: "No Internet Required",
+                        description: "Works completely offline",
+                        visible: card1Visible
+                    )
+                    PrivacyCard(
+                        icon: "hand.raised.fill",
+                        label: "Zero Data Collection",
+                        description: "We never see your health data",
+                        visible: card2Visible
+                    )
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 24)
+        }
+        .scrollBounceBehavior(.basedOnSize)
+        .onAppear { triggerStagger() }
+    }
+
+    private func triggerStagger() {
+        headerVisible = false; card0Visible = false; card1Visible = false; card2Visible = false
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.8).delay(0.05)) { headerVisible = true }
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.8).delay(0.17)) { card0Visible = true }
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.8).delay(0.29)) { card1Visible = true }
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.8).delay(0.41)) { card2Visible = true }
+    }
+}
+
+// MARK: - Page 2: Features
+
+private struct FeatureGridCard: View {
+    let icon: String
+    let gradient: [Color]
+    let title: String
+    let description: String
+    let visible: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(LinearGradient(colors: gradient, startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .frame(width: 44, height: 44)
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.nearBlack)
+                Text(description)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.mutedFg)
+                    .lineSpacing(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.cardBg)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .warmShadow()
+        .opacity(visible ? 1 : 0)
+        .offset(y: visible ? 0 : 16)
+    }
+}
+
+private struct FeaturesPage: View {
+    @State private var titleVisible = false
+    @State private var card0Visible = false
+    @State private var card1Visible = false
+    @State private var card2Visible = false
+    @State private var card3Visible = false
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 28) {
+                Text("Everything you need")
+                    .font(.system(size: 28, weight: .regular, design: .serif))
+                    .foregroundStyle(Color.nearBlack)
+                    .multilineTextAlignment(.center)
+                    .opacity(titleVisible ? 1 : 0)
+                    .offset(y: titleVisible ? 0 : 12)
+
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                    FeatureGridCard(
+                        icon: "pill.fill",
+                        gradient: [Color.tealStart, Color.tealEnd],
+                        title: "Medications",
+                        description: "Reminders, tracking, and refill alerts",
+                        visible: card0Visible
+                    )
+                    FeatureGridCard(
+                        icon: "stethoscope",
+                        gradient: [Color.amberStart, Color.amberEnd],
+                        title: "Care Team",
+                        description: "Doctors, appointments, and contacts",
+                        visible: card1Visible
+                    )
+                    FeatureGridCard(
+                        icon: "waveform.path.ecg",
+                        gradient: [Color.roseStart, Color.roseEnd],
+                        title: "Vitals",
+                        description: "Blood pressure, weight, and more",
+                        visible: card2Visible
+                    )
+                    FeatureGridCard(
+                        icon: "note.text",
+                        gradient: [Color.purpleStart, Color.purpleEnd],
+                        title: "Notes",
+                        description: "Symptoms, questions, and health logs",
+                        visible: card3Visible
+                    )
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 24)
+        }
+        .scrollBounceBehavior(.basedOnSize)
+        .onAppear { triggerStagger() }
+    }
+
+    private func triggerStagger() {
+        titleVisible = false
+        card0Visible = false; card1Visible = false; card2Visible = false; card3Visible = false
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.8).delay(0.05)) { titleVisible = true }
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.8).delay(0.15)) { card0Visible = true }
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.8).delay(0.25)) { card1Visible = true }
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.8).delay(0.35)) { card2Visible = true }
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.8).delay(0.45)) { card3Visible = true }
+    }
+}
+
+// MARK: - Page 3: Notifications
+
+private struct NotificationsPage: View {
+    @Binding var notificationsEnabled: Bool
+    @State private var notificationsDenied: Bool = false
+    @State private var headerVisible = false
+    @State private var bodyVisible = false
+    @State private var buttonVisible = false
+    @Environment(\.scenePhase) private var scenePhase
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 0) {
+                Spacer()
+                VStack(spacing: 28) {
+                    VStack(spacing: 20) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                                .fill(LinearGradient(colors: [Color.tealStart, Color.tealEnd], startPoint: .topLeading, endPoint: .bottomTrailing))
+                                .frame(width: 90, height: 90)
+                                .warmShadowLg()
+                            Image(systemName: "bell.badge.fill")
+                                .font(.system(size: 38))
+                                .foregroundStyle(.white)
+                        }
+                        .opacity(headerVisible ? 1 : 0)
+                        .scaleEffect(headerVisible ? 1 : 0.8)
+
+                        VStack(spacing: 10) {
+                            Text("Stay on track")
+                                .font(.system(size: 28, weight: .regular, design: .serif))
+                                .foregroundStyle(Color.nearBlack)
+                                .multilineTextAlignment(.center)
+                            Text("Get reminders for medications and upcoming appointments.")
+                                .font(.system(size: 16))
+                                .foregroundStyle(Color.mutedFg)
+                                .multilineTextAlignment(.center)
+                                .lineSpacing(3)
+                        }
+                        .opacity(bodyVisible ? 1 : 0)
+                        .offset(y: bodyVisible ? 0 : 10)
+                    }
+
                     VStack(spacing: 12) {
                         Button {
                             if notificationsDenied {
@@ -298,7 +406,7 @@ private struct OnboardingPageView: View {
                                 } else if notificationsDenied {
                                     LinearGradient(colors: [Color.amberStart, Color.amberEnd], startPoint: .leading, endPoint: .trailing)
                                 } else {
-                                    LinearGradient(colors: page.gradient, startPoint: .leading, endPoint: .trailing)
+                                    LinearGradient(colors: [Color.tealStart, Color.tealEnd], startPoint: .leading, endPoint: .trailing)
                                 }
                             }
                             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
@@ -311,18 +419,30 @@ private struct OnboardingPageView: View {
                             .font(.system(size: 13))
                             .foregroundStyle(Color.mutedFg)
                     }
+                    .opacity(buttonVisible ? 1 : 0)
+                    .offset(y: buttonVisible ? 0 : 10)
                 }
                 Spacer()
                 Spacer()
             }
-            .padding(.horizontal, 32)
+            .padding(.horizontal, 24)
             .frame(minHeight: UIScreen.main.bounds.height - 200)
         }
         .scrollBounceBehavior(.basedOnSize)
-        .onAppear { checkNotificationStatus() }
+        .onAppear {
+            checkNotificationStatus()
+            triggerStagger()
+        }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active { checkNotificationStatus() }
         }
+    }
+
+    private func triggerStagger() {
+        headerVisible = false; bodyVisible = false; buttonVisible = false
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.8).delay(0.1)) { headerVisible = true }
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.8).delay(0.25)) { bodyVisible = true }
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.8).delay(0.4)) { buttonVisible = true }
     }
 
     private func checkNotificationStatus() {
@@ -336,69 +456,129 @@ private struct OnboardingPageView: View {
     }
 }
 
-// MARK: - Animated dot indicator
-
-private struct PageDots: View {
-    let count: Int
-    let current: Int
-
-    var body: some View {
-        HStack(spacing: 6) {
-            ForEach(0..<count, id: \.self) { i in
-                Capsule()
-                    .fill(i == current ? Color.primaryTeal : Color.mutedBg)
-                    .frame(width: i == current ? 22 : 8, height: 8)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: current)
-            }
-        }
-    }
-}
-
-// MARK: - Main view
+// MARK: - Main Onboarding View
 
 struct OnboardingView: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
     @State private var currentPage: Int = 0
+    @State private var goingForward: Bool = true
     @State private var notificationsEnabled: Bool = false
     @State private var showSkipWarning: Bool = false
     @State private var skipWarningShown: Bool = false
+    @State private var topSafeArea: CGFloat = 0
 
-    private var isLastPage: Bool { currentPage == onboardingPages.count - 1 }
+    private let totalPages = 4
+    private var isLastPage: Bool { currentPage == totalPages - 1 }
 
     var body: some View {
         ZStack(alignment: .top) {
             Color.bg.ignoresSafeArea()
 
-            TabView(selection: $currentPage) {
-                ForEach(onboardingPages.indices, id: \.self) { i in
-                    OnboardingPageView(page: onboardingPages[i], notificationsEnabled: $notificationsEnabled)
-                        .tag(i)
-                }
+            // Page content
+            ZStack {
+                pageContent
+                    .id(currentPage)
+                    .transition(.asymmetric(
+                        insertion: .move(edge: goingForward ? .trailing : .leading).combined(with: .opacity),
+                        removal: .move(edge: goingForward ? .leading : .trailing).combined(with: .opacity)
+                    ))
             }
-            .tabViewStyle(.page(indexDisplayMode: .never))
+            .padding(.top, topSafeArea + 60)
 
-            // Skip button (pages 1–6 only)
-            if currentPage > 0 {
-                HStack {
-                    Spacer()
+            // Top chrome: back + skip
+            HStack {
+                if currentPage > 0 {
+                    Button {
+                        goingForward = false
+                        withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
+                            currentPage -= 1
+                        }
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(Color.mutedFg)
+                            .frame(width: 36, height: 36)
+                    }
+                    .transition(.opacity)
+                } else {
+                    Color.clear.frame(width: 36, height: 36)
+                }
+
+                Spacer()
+
+                if currentPage > 0 {
                     Button("Skip") { handleSkip() }
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(Color.mutedFg)
-                        .padding(.trailing, 24)
-                        .padding(.top, 60)
+                        .transition(.opacity)
                 }
-                .transition(.opacity)
-                .animation(.easeInOut(duration: 0.2), value: currentPage)
             }
+            .padding(.horizontal, 24)
+            .padding(.top, topSafeArea + 12)
+            .animation(.easeInOut(duration: 0.2), value: currentPage)
 
             // Two-tap skip warning toast
             if showSkipWarning {
                 SkipWarningToast()
+                    .padding(.top, topSafeArea + 60)
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .zIndex(10)
             }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) { bottomNavBar }
+        .safeAreaInset(edge: .bottom, spacing: 0) { bottomBar }
+        .onAppear {
+            topSafeArea = (UIApplication.shared.connectedScenes.first as? UIWindowScene)?
+                .windows.first?.safeAreaInsets.top ?? 0
+        }
+    }
+
+    @ViewBuilder
+    private var pageContent: some View {
+        switch currentPage {
+        case 0:
+            WelcomePage()
+        case 1:
+            PrivacyPage()
+        case 2:
+            FeaturesPage()
+        case 3:
+            NotificationsPage(notificationsEnabled: $notificationsEnabled)
+        default:
+            EmptyView()
+        }
+    }
+
+    private var bottomBar: some View {
+        VStack(spacing: 16) {
+            ProgressBar(totalPages: totalPages, currentPage: currentPage)
+
+            Button {
+                if !isLastPage {
+                    goingForward = true
+                    withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
+                        currentPage += 1
+                    }
+                } else {
+                    attemptCompleteOnboarding()
+                }
+            } label: {
+                Text(isLastPage ? "Get Started" : "Next")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(
+                        LinearGradient(colors: [Color.tealStart, Color.tealEnd], startPoint: .leading, endPoint: .trailing)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .warmShadow()
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 24)
+        }
+        .padding(.top, 16)
+        .padding(.bottom, 40)
+        .background(Color.bg)
     }
 
     private func attemptCompleteOnboarding() {
@@ -417,9 +597,10 @@ struct OnboardingView: View {
     private func handleSkip() {
         if !notificationsEnabled && !skipWarningShown && !isLastPage {
             skipWarningShown = true
+            goingForward = true
             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { showSkipWarning = true }
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                currentPage = onboardingPages.count - 1
+            withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
+                currentPage = totalPages - 1
             }
             Task {
                 try? await Task.sleep(for: .seconds(4))
@@ -428,38 +609,5 @@ struct OnboardingView: View {
         } else {
             attemptCompleteOnboarding()
         }
-    }
-
-    private var bottomNavBar: some View {
-        VStack(spacing: 20) {
-            PageDots(count: onboardingPages.count, current: currentPage)
-            Button {
-                if currentPage < onboardingPages.count - 1 {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { currentPage += 1 }
-                } else {
-                    attemptCompleteOnboarding()
-                }
-            } label: {
-                Text(isLastPage ? "Get Started" : "Next")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(
-                        LinearGradient(
-                            colors: [Color.tealStart, Color.tealEnd],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .warmShadow()
-            }
-            .buttonStyle(.plain)
-            .padding(.horizontal, 24)
-        }
-        .padding(.top, 16)
-        .padding(.bottom, 40)
-        .background(Color.bg)
     }
 }
