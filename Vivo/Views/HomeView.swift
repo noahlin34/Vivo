@@ -383,6 +383,7 @@ struct HomeView: View {
                 Text(label)
                     .font(.system(size: 12))
                     .foregroundStyle(Color.nearBlack)
+                    .lineLimit(1)
                 Text("\(count)")
                     .font(.system(size: 10))
                     .foregroundStyle(Color.mutedFg)
