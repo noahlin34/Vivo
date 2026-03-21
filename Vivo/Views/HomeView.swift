@@ -366,10 +366,14 @@ struct HomeView: View {
 
     // MARK: - Quick Pills
 
+    private var hasLowSupplyMed: Bool {
+        medications.contains { $0.isLowSupply }
+    }
+
     var quickPillsSection: some View {
         HStack(spacing: 8) {
             quickPill(icon: "pill.fill", label: "Meds", count: medications.count,
-                      gradient: [.tealStart, .tealEnd], tab: 1)
+                      gradient: [.tealStart, .tealEnd], tab: 1, showBadge: hasLowSupplyMed)
             quickPill(icon: "stethoscope", label: "Care", count: doctors.count + allUpcomingAppointments.count,
                       gradient: [.amberStart, .amberEnd], tab: 2)
             quickPill(icon: "waveform.path.ecg", label: "Vitals", count: vitals.count,
@@ -379,7 +383,7 @@ struct HomeView: View {
         }
     }
 
-    func quickPill(icon: String, label: String, count: Int, gradient: [Color], tab: Int) -> some View {
+    func quickPill(icon: String, label: String, count: Int, gradient: [Color], tab: Int, showBadge: Bool = false) -> some View {
         Button {
             selectedTab = tab
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -393,6 +397,14 @@ struct HomeView: View {
                         LinearGradient(colors: gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+                    .overlay(alignment: .topTrailing) {
+                        if showBadge {
+                            Circle()
+                                .fill(Color.amberStart)
+                                .frame(width: 8, height: 8)
+                                .offset(x: 2, y: -2)
+                        }
+                    }
                 Text(label)
                     .font(.system(size: 12))
                     .foregroundStyle(Color.nearBlack)
