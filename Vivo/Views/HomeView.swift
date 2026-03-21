@@ -491,7 +491,7 @@ struct HomeView: View {
                         .foregroundStyle(Color.amberStart)
                     }
                 } else {
-                    Text("\(allUpcomingAppointments.count) appts")
+                    Text(allUpcomingAppointments.count == 0 ? "None upcoming" : "\(allUpcomingAppointments.count) appt\(allUpcomingAppointments.count == 1 ? "" : "s")")
                         .font(.system(size: 12))
                         .foregroundStyle(Color.amberStart)
                         .padding(.horizontal, 10)
