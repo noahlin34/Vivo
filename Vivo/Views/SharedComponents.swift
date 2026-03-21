@@ -426,14 +426,6 @@ struct DoctorCardRow: View {
             }
 
             Spacer()
-
-            // Phone icon button
-            Image(systemName: "phone")
-                .font(.system(size: 14))
-                .foregroundStyle(Color.primaryTeal)
-                .frame(width: 32, height: 32)
-                .background(Color.primaryTeal.opacity(0.08))
-                .clipShape(Circle())
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
