@@ -12,6 +12,8 @@ import UIKit
 struct ContentView: View {
     @State private var selectedTab: Int = 0
     @State private var notificationStatus = NotificationStatusMonitor()
+    @State private var walkthrough = WalkthroughManager()
+    @AppStorage("hasCompletedWalkthrough") private var hasCompletedWalkthrough = false
     @Environment(\.scenePhase) private var scenePhase
     @Query private var medications: [Medication]
     @Query private var appointments: [Appointment]
@@ -29,13 +31,24 @@ struct ContentView: View {
             NotesView().tag(4)
         }
         .environment(notificationStatus)
+        .environment(walkthrough)
         .tint(Color.primaryTeal)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             CustomTabBar(selectedTab: $selectedTab)
         }
+        .overlay {
+            SpotlightOverlay()
+        }
         .onAppear {
             rescheduleAllNotifications()
             notificationStatus.refresh()
+            if !hasCompletedWalkthrough {
+                if medications.isEmpty {
+                    walkthrough.isActive = true
+                } else {
+                    hasCompletedWalkthrough = true
+                }
+            }
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active { notificationStatus.refresh() }
@@ -72,6 +85,7 @@ private let tabItems: [TabItemDef] = [
 
 struct CustomTabBar: View {
     @Binding var selectedTab: Int
+    @Environment(WalkthroughManager.self) private var walkthrough
 
     var body: some View {
         VStack(spacing: 0) {
@@ -109,10 +123,16 @@ struct CustomTabBar: View {
     private func tabButton(index: Int) -> some View {
         let item = tabItems[index]
         let isActive = selectedTab == index
+        let isMedsTarget = walkthrough.isActive && walkthrough.currentStep == .tapMedsTab && index == 1
+        let isBlocked = walkthrough.isActive && walkthrough.currentStep == .tapMedsTab && index != 1
 
         Button {
+            guard !isBlocked else { return }
             selectedTab = index
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            if isMedsTarget {
+                walkthrough.advance()
+            }
         } label: {
             VStack(spacing: 3) {
                 ZStack {
@@ -126,6 +146,14 @@ struct CustomTabBar: View {
                         .foregroundStyle(isActive ? item.color : Color.mutedFg)
                 }
                 .frame(width: 38, height: 32)
+                // Report Meds tab frame for spotlight
+                .onGeometryChange(for: CGRect.self) { proxy in
+                    proxy.frame(in: .global)
+                } action: { newFrame in
+                    if index == 1 {
+                        walkthrough.medsTabFrame = newFrame
+                    }
+                }
 
                 // Label only on active tab
                 if isActive {
@@ -139,6 +167,9 @@ struct CustomTabBar: View {
             .padding(.vertical, 2)
             .offset(y: isActive ? -2 : 0)
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: selectedTab)
+            // Dim non-target tabs during walkthrough
+            .opacity(isBlocked ? 0.3 : 1.0)
+            .animation(.easeInOut(duration: 0.2), value: walkthrough.isActive)
         }
         .buttonStyle(.plain)
     }
