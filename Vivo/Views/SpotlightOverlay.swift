@@ -64,7 +64,7 @@ private struct Triangle: Shape {
 // MARK: - Spotlight Overlay
 
 struct SpotlightOverlay: View {
-    @Environment(WalkthroughManager.self) private var walkthrough
+    let walkthrough: WalkthroughManager
     @AppStorage("hasCompletedWalkthrough") private var hasCompletedWalkthrough = false
 
     var body: some View {

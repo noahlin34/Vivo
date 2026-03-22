@@ -34,10 +34,10 @@ struct ContentView: View {
         .environment(walkthrough)
         .tint(Color.primaryTeal)
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            CustomTabBar(selectedTab: $selectedTab)
+            CustomTabBar(selectedTab: $selectedTab, walkthrough: walkthrough)
         }
         .overlay {
-            SpotlightOverlay()
+            SpotlightOverlay(walkthrough: walkthrough)
         }
         .onAppear {
             rescheduleAllNotifications()
@@ -85,7 +85,7 @@ private let tabItems: [TabItemDef] = [
 
 struct CustomTabBar: View {
     @Binding var selectedTab: Int
-    @Environment(WalkthroughManager.self) private var walkthrough
+    let walkthrough: WalkthroughManager
 
     var body: some View {
         VStack(spacing: 0) {
