@@ -9,6 +9,7 @@ import UserNotifications
 
 struct MedicationsView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(WalkthroughManager.self) private var walkthrough
     @Query(sort: \Medication.scheduledTime) private var medications: [Medication]
     @State private var showAdd = false
     @State private var selected: Medication? = nil
@@ -73,7 +74,17 @@ struct MedicationsView: View {
                             .foregroundStyle(Color.mutedFg)
                     }
                     Spacer()
-                    GradientAddButton(gradient: [.tealStart, .tealEnd]) { showAdd = true }
+                    GradientAddButton(gradient: [.tealStart, .tealEnd]) {
+                        showAdd = true
+                        if walkthrough.isActive && walkthrough.currentStep == .tapAddButton {
+                            walkthrough.advance()
+                        }
+                    }
+                    .onGeometryChange(for: CGRect.self) { proxy in
+                        proxy.frame(in: .global)
+                    } action: { newFrame in
+                        walkthrough.addButtonFrame = newFrame
+                    }
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 56)
@@ -167,6 +178,16 @@ struct MedicationsView: View {
             Text("This action cannot be undone.")
         }
         .sheet(isPresented: $showAdd) { AddMedicationView() }
+        .onChange(of: showAdd) { wasOpen, isOpen in
+            // Sheet just dismissed during walkthrough
+            if wasOpen && !isOpen && walkthrough.isActive && walkthrough.currentStep == .addingMedication {
+                if !medications.isEmpty {
+                    walkthrough.advance() // → .complete
+                } else {
+                    walkthrough.currentStep = .tapAddButton // cancelled, try again
+                }
+            }
+        }
         .sheet(item: $selected) { med in
             MedicationDetailSheet(medication: med) {
                 MedicationNotifications.cancel(for: med)
