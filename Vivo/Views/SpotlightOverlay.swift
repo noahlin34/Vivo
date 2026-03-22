@@ -71,6 +71,7 @@ struct SpotlightOverlay: View {
         GeometryReader { geo in
             // Convert global frame coords → overlay-local coords by subtracting the overlay's own origin
             let overlayOrigin = geo.frame(in: .global).origin
+            let overlaySize = geo.size
             if walkthrough.isActive {
                 switch walkthrough.currentStep {
                 case .tapMedsTab:
@@ -79,7 +80,8 @@ struct SpotlightOverlay: View {
                         cornerRadius: 14,
                         padding: 10,
                         message: "Tap Meds to set up\nyour medications",
-                        tooltipAbove: true
+                        tooltipAbove: true,
+                        overlaySize: overlaySize
                     )
                     .transition(.opacity)
                 case .tapAddButton:
@@ -88,7 +90,8 @@ struct SpotlightOverlay: View {
                         cornerRadius: 16,
                         padding: 10,
                         message: "Tap + to add your\nfirst medication",
-                        tooltipAbove: true
+                        tooltipAbove: false,
+                        overlaySize: overlaySize
                     )
                     .transition(.opacity)
                 case .addingMedication:
@@ -108,9 +111,21 @@ struct SpotlightOverlay: View {
         cornerRadius: CGFloat,
         padding: CGFloat,
         message: String,
-        tooltipAbove: Bool
+        tooltipAbove: Bool,
+        overlaySize: CGSize
     ) -> some View {
         let spotRect = frame.insetBy(dx: -padding, dy: -padding)
+        let tooltipHalfWidth: CGFloat = 110
+        let tooltipHalfHeight: CGFloat = 50
+        let margin: CGFloat = 16
+
+        // Clamp X so tooltip stays on screen
+        let rawX = spotRect.midX
+        let tooltipX = min(max(rawX, tooltipHalfWidth + margin), overlaySize.width - tooltipHalfWidth - margin)
+
+        // Place tooltip above or below; clamp so it never enters the status bar or bottom edge
+        let rawY = tooltipAbove ? spotRect.minY - tooltipHalfHeight - margin : spotRect.maxY + tooltipHalfHeight + margin
+        let tooltipY = min(max(rawY, tooltipHalfHeight + margin), overlaySize.height - tooltipHalfHeight - margin)
 
         return ZStack {
             // Dim layer with cutout
@@ -129,21 +144,12 @@ struct SpotlightOverlay: View {
                 .position(x: spotRect.midX, y: spotRect.midY)
 
             // Tooltip
-            let tooltipY = tooltipAbove
-                ? spotRect.minY - 56
-                : spotRect.maxY + 56
             TooltipBubble(message: message, pointsDown: tooltipAbove)
                 .frame(maxWidth: 220)
-                .position(x: clampedTooltipX(spotRect: spotRect), y: tooltipY)
+                .position(x: tooltipX, y: tooltipY)
         }
         .allowsHitTesting(false)
         .animation(.easeInOut(duration: 0.25), value: walkthrough.currentStep)
-    }
-
-    private func clampedTooltipX(spotRect: CGRect) -> CGFloat {
-        let screenWidth = UIScreen.main.bounds.width
-        let tooltipHalfWidth: CGFloat = 110
-        return min(max(spotRect.midX, tooltipHalfWidth + 16), screenWidth - tooltipHalfWidth - 16)
     }
 
     // MARK: - Completion Overlay
