@@ -68,31 +68,35 @@ struct SpotlightOverlay: View {
     @AppStorage("hasCompletedWalkthrough") private var hasCompletedWalkthrough = false
 
     var body: some View {
-        if walkthrough.isActive {
-            switch walkthrough.currentStep {
-            case .tapMedsTab:
-                spotlightView(
-                    frame: walkthrough.medsTabFrame,
-                    cornerRadius: 14,
-                    padding: 10,
-                    message: "Tap Meds to set up\nyour medications",
-                    tooltipAbove: true
-                )
-                .transition(.opacity)
-            case .tapAddButton:
-                spotlightView(
-                    frame: walkthrough.addButtonFrame,
-                    cornerRadius: 16,
-                    padding: 10,
-                    message: "Tap + to add your\nfirst medication",
-                    tooltipAbove: true
-                )
-                .transition(.opacity)
-            case .addingMedication:
-                EmptyView()
-            case .complete:
-                completionOverlay
+        GeometryReader { geo in
+            // Convert global frame coords → overlay-local coords by subtracting the overlay's own origin
+            let overlayOrigin = geo.frame(in: .global).origin
+            if walkthrough.isActive {
+                switch walkthrough.currentStep {
+                case .tapMedsTab:
+                    spotlightView(
+                        frame: walkthrough.medsTabFrame.toLocal(overlayOrigin),
+                        cornerRadius: 14,
+                        padding: 10,
+                        message: "Tap Meds to set up\nyour medications",
+                        tooltipAbove: true
+                    )
                     .transition(.opacity)
+                case .tapAddButton:
+                    spotlightView(
+                        frame: walkthrough.addButtonFrame.toLocal(overlayOrigin),
+                        cornerRadius: 16,
+                        padding: 10,
+                        message: "Tap + to add your\nfirst medication",
+                        tooltipAbove: true
+                    )
+                    .transition(.opacity)
+                case .addingMedication:
+                    EmptyView()
+                case .complete:
+                    completionOverlay
+                        .transition(.opacity)
+                }
             }
         }
     }
@@ -173,5 +177,14 @@ struct SpotlightOverlay: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Coordinate Helper
+
+private extension CGRect {
+    /// Converts a rect from global screen coordinates to the overlay's local coordinate space.
+    func toLocal(_ overlayOrigin: CGPoint) -> CGRect {
+        CGRect(x: minX - overlayOrigin.x, y: minY - overlayOrigin.y, width: width, height: height)
     }
 }
