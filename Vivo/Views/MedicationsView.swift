@@ -501,7 +501,7 @@ struct MedicationDetailSheet: View {
 
 // MARK: - Shared Time Picker Row
 
-private func medicationTimePickerRow(label: String, selection: Binding<Date>) -> some View {
+func medicationTimePickerRow(label: String, selection: Binding<Date>) -> some View {
     HStack(spacing: 10) {
         Image(systemName: "clock")
             .font(.system(size: 14))
