@@ -178,13 +178,20 @@ struct MedicationsView: View {
             Text("This action cannot be undone.")
         }
         .sheet(isPresented: $showAdd) { AddMedicationView() }
+        // Advance when SwiftData confirms a medication was actually saved
+        .onChange(of: medications.count) { oldCount, newCount in
+            if newCount > oldCount && walkthrough.isActive && walkthrough.currentStep == .addingMedication {
+                walkthrough.advance() // → .complete
+            }
+        }
+        // Handle cancel: delay the revert so that a SwiftData update in-flight has time to arrive
         .onChange(of: showAdd) { wasOpen, isOpen in
-            // Sheet just dismissed during walkthrough
             if wasOpen && !isOpen && walkthrough.isActive && walkthrough.currentStep == .addingMedication {
-                if !medications.isEmpty {
-                    walkthrough.advance() // → .complete
-                } else {
-                    walkthrough.currentStep = .tapAddButton // cancelled, try again
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                    // If step is still .addingMedication, no medication was saved — try again
+                    if walkthrough.isActive && walkthrough.currentStep == .addingMedication {
+                        walkthrough.currentStep = .tapAddButton
+                    }
                 }
             }
         }
