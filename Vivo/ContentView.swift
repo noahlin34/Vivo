@@ -38,6 +38,7 @@ struct ContentView: View {
         }
         .overlay {
             SpotlightOverlay(walkthrough: walkthrough)
+                .ignoresSafeArea()
         }
         .onAppear {
             rescheduleAllNotifications()
