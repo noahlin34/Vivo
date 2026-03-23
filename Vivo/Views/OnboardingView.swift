@@ -45,6 +45,13 @@ private struct WelcomePage: View {
                         .multilineTextAlignment(.center)
                         .opacity(taglineVisible ? 1 : 0)
                         .offset(y: taglineVisible ? 0 : 10)
+
+                    Text("Track medications, appointments, vitals,\nand notes — all in one place.")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color.mutedFg)
+                        .multilineTextAlignment(.center)
+                        .opacity(taglineVisible ? 1 : 0)
+                        .offset(y: taglineVisible ? 0 : 10)
                 }
 
                 Button(action: onGetStarted) {
