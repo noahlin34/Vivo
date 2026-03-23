@@ -22,11 +22,13 @@ extension View {
 private struct TooltipBubble: View {
     let message: String
     let pointsDown: Bool
+    var caretOffset: CGFloat = 0
 
     var body: some View {
         VStack(spacing: 0) {
             if !pointsDown {
                 caret.rotationEffect(.degrees(180))
+                    .offset(x: caretOffset)
             }
             Text(message)
                 .font(.system(size: 15, weight: .regular, design: .serif))
@@ -38,7 +40,7 @@ private struct TooltipBubble: View {
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .warmShadow()
             if pointsDown {
-                caret
+                caret.offset(x: caretOffset)
             }
         }
     }
@@ -67,39 +69,37 @@ struct SpotlightOverlay: View {
     let walkthrough: WalkthroughManager
     @AppStorage("hasCompletedWalkthrough") private var hasCompletedWalkthrough = false
 
+    // The overlay is attached with .ignoresSafeArea() so its coordinate space
+    // starts at (0,0) — identical to .global. Use UIScreen bounds for clamping.
+    private var screenSize: CGSize { UIScreen.main.bounds.size }
+    @State private var featuresVisible = false
+
     var body: some View {
-        GeometryReader { geo in
-            // Convert global frame coords → overlay-local coords by subtracting the overlay's own origin
-            let overlayOrigin = geo.frame(in: .global).origin
-            let overlaySize = geo.size
-            if walkthrough.isActive {
-                switch walkthrough.currentStep {
-                case .tapMedsTab:
-                    spotlightView(
-                        frame: walkthrough.medsTabFrame.toLocal(overlayOrigin),
-                        cornerRadius: 14,
-                        padding: 10,
-                        message: "Tap Meds to set up\nyour medications",
-                        tooltipAbove: true,
-                        overlaySize: overlaySize
-                    )
+        if walkthrough.isActive {
+            switch walkthrough.currentStep {
+            case .tapMedsTab:
+                spotlightView(
+                    frame: walkthrough.medsTabFrame,
+                    cornerRadius: 14,
+                    padding: 10,
+                    message: "Tap Meds to set up\nyour medications",
+                    tooltipAbove: true
+                )
+                .transition(.opacity)
+            case .tapAddButton:
+                spotlightView(
+                    frame: walkthrough.addButtonFrame,
+                    cornerRadius: 16,
+                    padding: 10,
+                    message: "Tap + to add your\nfirst medication",
+                    tooltipAbove: false
+                )
+                .transition(.opacity)
+            case .addingMedication:
+                EmptyView()
+            case .complete:
+                completionOverlay
                     .transition(.opacity)
-                case .tapAddButton:
-                    spotlightView(
-                        frame: walkthrough.addButtonFrame.toLocal(overlayOrigin),
-                        cornerRadius: 16,
-                        padding: 10,
-                        message: "Tap + to add your\nfirst medication",
-                        tooltipAbove: false,
-                        overlaySize: overlaySize
-                    )
-                    .transition(.opacity)
-                case .addingMedication:
-                    EmptyView()
-                case .complete:
-                    completionOverlay
-                        .transition(.opacity)
-                }
             }
         }
     }
@@ -111,8 +111,7 @@ struct SpotlightOverlay: View {
         cornerRadius: CGFloat,
         padding: CGFloat,
         message: String,
-        tooltipAbove: Bool,
-        overlaySize: CGSize
+        tooltipAbove: Bool
     ) -> some View {
         let spotRect = frame.insetBy(dx: -padding, dy: -padding)
         let tooltipHalfWidth: CGFloat = 110
@@ -121,11 +120,15 @@ struct SpotlightOverlay: View {
 
         // Clamp X so tooltip stays on screen
         let rawX = spotRect.midX
-        let tooltipX = min(max(rawX, tooltipHalfWidth + margin), overlaySize.width - tooltipHalfWidth - margin)
+        let tooltipX = min(max(rawX, tooltipHalfWidth + margin), screenSize.width - tooltipHalfWidth - margin)
+
+        // Offset the caret so it points at the actual target even when the box is clamped
+        let rawCaretOffset = spotRect.midX - tooltipX
+        let caretOffset = min(max(rawCaretOffset, -(tooltipHalfWidth - 10)), tooltipHalfWidth - 10)
 
         // Place tooltip above or below; clamp so it never enters the status bar or bottom edge
         let rawY = tooltipAbove ? spotRect.minY - tooltipHalfHeight - margin : spotRect.maxY + tooltipHalfHeight + margin
-        let tooltipY = min(max(rawY, tooltipHalfHeight + margin), overlaySize.height - tooltipHalfHeight - margin)
+        let tooltipY = min(max(rawY, tooltipHalfHeight + margin), screenSize.height - tooltipHalfHeight - margin)
 
         return ZStack {
             // Dim layer with cutout
@@ -143,8 +146,8 @@ struct SpotlightOverlay: View {
                 .frame(width: spotRect.width, height: spotRect.height)
                 .position(x: spotRect.midX, y: spotRect.midY)
 
-            // Tooltip
-            TooltipBubble(message: message, pointsDown: tooltipAbove)
+            // Tooltip — caret offset tracks the target when the box is clamped
+            TooltipBubble(message: message, pointsDown: tooltipAbove, caretOffset: caretOffset)
                 .frame(maxWidth: 220)
                 .position(x: tooltipX, y: tooltipY)
         }
@@ -159,38 +162,101 @@ struct SpotlightOverlay: View {
             Color.black.opacity(0.45)
                 .ignoresSafeArea()
 
-            VStack(spacing: 16) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 64))
-                    .foregroundStyle(.white)
-                    .symbolEffect(.bounce)
-                Text("You're all set!")
-                    .font(.system(size: 26, weight: .regular, design: .serif))
-                    .foregroundStyle(.white)
-                Text("You can add more medications and\ntrack your health from each tab.")
-                    .font(.system(size: 14))
-                    .foregroundStyle(.white.opacity(0.75))
-                    .multilineTextAlignment(.center)
-            }
-            .padding(32)
-        }
-        .allowsHitTesting(false)
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    hasCompletedWalkthrough = true
-                    walkthrough.finish()
+            VStack(spacing: 24) {
+                // Checkmark + title + subtitle
+                VStack(spacing: 10) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 56))
+                        .foregroundStyle(.white)
+                        .symbolEffect(.bounce)
+                    Text("You're all set!")
+                        .font(.system(size: 26, weight: .regular, design: .serif))
+                        .foregroundStyle(.white)
+                    Text("Your first medication is tracked.")
+                        .font(.system(size: 15))
+                        .foregroundStyle(.white.opacity(0.75))
                 }
+
+                // Divider
+                Rectangle()
+                    .fill(.white.opacity(0.15))
+                    .frame(height: 1)
+                    .padding(.horizontal, 8)
+
+                // Section header
+                Text("Here's what else Vivo can do:")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.6))
+
+                // Feature rows
+                VStack(spacing: 14) {
+                    featureRow(icon: "pill.fill",          gradient: [.tealStart,   .tealEnd],   name: "Meds",   description: "Track doses & refills",             index: 0)
+                    featureRow(icon: "stethoscope",        gradient: [.amberStart,  .amberEnd],  name: "Care",   description: "Doctors & appointments",            index: 1)
+                    featureRow(icon: "waveform.path.ecg",  gradient: [.roseStart,   .roseEnd],   name: "Vitals", description: "Blood pressure, weight & more",      index: 2)
+                    featureRow(icon: "note.text",          gradient: [.purpleStart, .purpleEnd], name: "Notes",  description: "Health journal & questions",         index: 3)
+                }
+
+                // Let's go button
+                Button {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        hasCompletedWalkthrough = true
+                        walkthrough.finish()
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Text("Let's go")
+                            .font(.system(size: 17, weight: .semibold))
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 15, weight: .semibold))
+                    }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(
+                        LinearGradient(colors: [Color.tealStart, Color.tealEnd], startPoint: .leading, endPoint: .trailing)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .warmShadow()
+                }
+                .buttonStyle(.plain)
+                .opacity(featuresVisible ? 1 : 0)
+                .offset(y: featuresVisible ? 0 : 10)
+                .animation(.spring(response: 0.55, dampingFraction: 0.8).delay(0.65), value: featuresVisible)
+            }
+            .padding(.horizontal, 36)
+            .padding(.vertical, 32)
+        }
+        .onAppear {
+            featuresVisible = false
+            withAnimation(.spring(response: 0.55, dampingFraction: 0.8).delay(0.2)) {
+                featuresVisible = true
             }
         }
     }
-}
 
-// MARK: - Coordinate Helper
-
-private extension CGRect {
-    /// Converts a rect from global screen coordinates to the overlay's local coordinate space.
-    func toLocal(_ overlayOrigin: CGPoint) -> CGRect {
-        CGRect(x: minX - overlayOrigin.x, y: minY - overlayOrigin.y, width: width, height: height)
+    private func featureRow(icon: String, gradient: [Color], name: String, description: String, index: Int) -> some View {
+        HStack(spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(LinearGradient(colors: gradient, startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .frame(width: 36, height: 36)
+                Image(systemName: icon)
+                    .font(.system(size: 15))
+                    .foregroundStyle(.white)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(name)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.white)
+                Text(description)
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.65))
+            }
+            Spacer()
+        }
+        .opacity(featuresVisible ? 1 : 0)
+        .offset(y: featuresVisible ? 0 : 12)
+        .animation(.spring(response: 0.55, dampingFraction: 0.8).delay(0.3 + Double(index) * 0.08), value: featuresVisible)
     }
 }
+
